@@ -74,8 +74,11 @@ for (let field of fields) {
     useSpinButton(input)
   }
 
-  let hotkey = field.querySelector('kbd')!.innerText.trim().toLowerCase()
-  hotkeys[hotkey] = input
+  let kbdElement = field.querySelector('kbd')
+  if (kbdElement) {
+    let hotkey = kbdElement.innerText.trim().toLowerCase()
+    hotkeys[hotkey] = input
+  }
 }
 
 function isInput(el: EventTarget | null): el is HTMLInputElement {

@@ -1,0 +1,159 @@
+.admin-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-modal.is-visible {
+  display: flex;
+}
+
+.admin-overlay {
+  position: absolute;
+  inset: 0;
+  background: oklch(0 0 0 / 70%);
+  backdrop-filter: blur(4px);
+}
+
+.admin-panel {
+  position: relative;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  padding: 32px;
+  overflow-y: auto;
+  background: var(--back-color);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px oklch(0 0 0 / 30%);
+}
+
+.admin-panel h2 {
+  margin: 0 0 24px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.admin-panel h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.admin-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.pantone-setter {
+  padding: 20px;
+  background: var(--field-back);
+  border-radius: 8px;
+}
+
+.pantone-current {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.color-preview-small {
+  width: 60px;
+  height: 60px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px oklch(0 0 0 / 15%);
+}
+
+.color-info-small {
+  flex: 1;
+  font-size: 14px;
+}
+
+.entries-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.entries-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.no-entries {
+  padding: 20px;
+  text-align: center;
+  opacity: 60%;
+}
+
+.entry-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 16px;
+  background: var(--field-back);
+  border-radius: 8px;
+}
+
+.entry-colors {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.entry-color-preview {
+  flex-shrink: 0;
+  width: 60px;
+  height: 80px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px oklch(0 0 0 / 15%);
+}
+
+.entry-details {
+  flex: 1;
+}
+
+.entry-name {
+  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.entry-info {
+  font-size: 13px;
+  line-height: 1.6;
+  opacity: 80%;
+}
+
+.entry-delta {
+  margin-top: 8px;
+  font-weight: 600;
+  color: var(--accent-color);
+}
+
+.entry-winner {
+  background: oklch(from var(--accent-color) l c h / 10%);
+  border: 2px solid var(--accent-color);
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-actions button {
+  flex: 1;
+  min-width: 150px;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  transition: all 0.2s;
+}

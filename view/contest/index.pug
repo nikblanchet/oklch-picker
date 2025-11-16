@@ -1,0 +1,20 @@
+.contest-modal#contest-modal
+  .contest-overlay
+  .contest-panel
+    h2 Guess the 2026 Pantone Color of the Year
+    .contest-content
+      .color-preview#contest-color-preview
+      .color-info
+        .color-name#contest-color-name Descriptive color name
+        .color-family#contest-color-family Color family
+      form.contest-form#contest-form
+        label Your Name:
+          input(type="text" id="contest-name-input" placeholder="Enter your name" required autocomplete="name")
+        .contest-actions
+          button.button-secondary(type="button" id="contest-cancel") Cancel
+          button.button-primary(type="submit") Submit Entry
+    .contest-success#contest-success
+      h3 Entry Submitted!
+      p Thank you for participating!
+      .submitted-info#submitted-info
+      button.button-primary(type="button" id="contest-close") Close

@@ -8,7 +8,12 @@ import {
 } from '../../stores/settings.ts'
 import { getCheckbox, onChange } from '../checkbox/index.ts'
 
-function init(store: WritableAtom<boolean>, checkbox: HTMLInputElement): void {
+function init(
+  store: WritableAtom<boolean>,
+  checkbox: HTMLInputElement | null
+): void {
+  if (!checkbox) return
+
   store.subscribe(show => {
     checkbox.checked = show
   })
@@ -17,7 +22,7 @@ function init(store: WritableAtom<boolean>, checkbox: HTMLInputElement): void {
   })
 }
 
-init(showCharts, getCheckbox('charts')!)
-init(showP3, getCheckbox('p3')!)
-init(showRec2020, getCheckbox('rec2020')!)
-init(show3d, getCheckbox('mode3d')!)
+init(showCharts, getCheckbox('charts'))
+init(showP3, getCheckbox('p3'))
+init(showRec2020, getCheckbox('rec2020'))
+init(show3d, getCheckbox('mode3d'))

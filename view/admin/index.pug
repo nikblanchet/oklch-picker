@@ -1,0 +1,21 @@
+.admin-modal#admin-modal
+  .admin-overlay
+  .admin-panel
+    h2 Contest Admin Panel
+    .admin-content
+      .pantone-setter
+        h3 Set Pantone 2026 Color
+        .pantone-current#pantone-current-color
+          .color-preview-small#pantone-preview
+          .color-info-small#pantone-info Not set
+        button.button-primary#set-pantone-button Set Current Color as Pantone 2026
+
+      .entries-list
+        h3 Entries (<span id="entries-count">0</span>)
+        .entries-container#entries-container
+          p.no-entries No entries yet
+
+      .admin-actions
+        button.button-secondary#export-entries Export Entries (JSON)
+        button.button-secondary#clear-all-data Clear All Data
+        button.button-primary#admin-close Close

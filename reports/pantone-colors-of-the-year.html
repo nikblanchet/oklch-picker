@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pantone Colors of the Year (2000-2025)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 40px 20px;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 2.5em;
+      color: #222;
+    }
+
+    .grid-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      max-width: 1400px;
+      margin: 0 auto;
+      justify-content: center;
+    }
+
+    .year-group {
+      background: white;
+      border: 4px solid black;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .year-label {
+      font-size: 1.8em;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: black;
+      text-align: center;
+    }
+
+    .chips-container {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      flex-wrap: nowrap;
+    }
+
+    .chip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chip {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .chip img {
+      max-width: 120px;
+      max-height: 180px;
+      width: auto;
+      height: auto;
+      display: block;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .chip-code {
+      font-size: 0.75em;
+      color: #666;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* Print styles */
+    @media print {
+      @page {
+        margin: 0.5in;
+      }
+
+      body {
+        background: white;
+        padding: 10px;
+      }
+
+      h1 {
+        margin-bottom: 20px;
+        font-size: 1.5em;
+        page-break-after: avoid;
+      }
+
+      .grid-container {
+        display: block;
+        width: 100%;
+        max-width: none;
+        text-align: center;
+      }
+
+      .year-group {
+        box-shadow: none;
+        display: inline-block;
+        margin-bottom: 15px;
+        padding: 12px;
+        border-width: 3px;
+        width: auto;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        -webkit-column-break-inside: avoid;
+        overflow: hidden;
+      }
+
+      .year-label {
+        font-size: 1.3em;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .chips-container {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .chip {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        display: inline-block;
+      }
+
+      .chip img {
+        max-width: 100px;
+        max-height: 150px;
+        box-shadow: none;
+        display: block;
+      }
+
+      .chip-code {
+        font-size: 0.7em;
+        display: block;
+      }
+    }
+
+    /* Responsive layout */
+    @media screen and (max-width: 768px) {
+      .grid-container {
+        gap: 20px;
+      }
+
+      .year-group {
+        padding: 15px;
+      }
+
+      .chip img {
+        max-width: 150px;
+        max-height: 225px;
+      }
+
+      .chips-container {
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Pantone Colors of the Year (2000-2025)</h1>
+  <div class="grid-container" id="grid"></div>
+
+  <script>
+    // Image data extracted from the directory listing
+    const imageFiles = [
+      { year: 2000, code: '15-4020-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2000_15-4020-TCX.webp' },
+      { year: 2001, code: '17-2031-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2001_17-2031-TCX.webp' },
+      { year: 2002, code: '19-1664-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2002_19-1664-TCX.webp' },
+      { year: 2003, code: '14-4811-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2003_14-4811-TCX.webp' },
+      { year: 2004, code: '17-1456-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2004_17-1456-TCX.webp' },
+      { year: 2005, code: '15-5217-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2005_15-5217-TCX.webp' },
+      { year: 2006, code: '13-1106-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2006_13-1106-TCX.webp' },
+      { year: 2007, code: '19-1557-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2007_19-1557-TCX.webp' },
+      { year: 2008, code: '18-3943-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2008_18-3943-TCX.webp' },
+      { year: 2009, code: '14-0848-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2009_14-0848-TCX.webp' },
+      { year: 2010, code: '15-5519-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2010_15-5519-TCX.webp' },
+      { year: 2011, code: '18-2120-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2011_18-2120-TCX.webp' },
+      { year: 2012, code: '17-1463-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2012_17-1463-TCX.webp' },
+      { year: 2013, code: '17-5641-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2013_17-5641-TCX.webp' },
+      { year: 2014, code: '18-3224-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2014_18-3224-TCX.webp' },
+      { year: 2015, code: '18-1438-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2015_18-1438-TCX.webp' },
+      { year: 2016, code: '13-1520-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2016_13-1520-TCX.webp' },
+      { year: 2016, code: '15-3919-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2016_15-3919-TCX.webp' },
+      { year: 2017, code: '15-0343-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2017_15-0343-TCX.webp' },
+      { year: 2018, code: '18-3838-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2018_18-3838-TCX.webp' },
+      { year: 2019, code: '16-1546-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2019_16-1546-TCX.webp' },
+      { year: 2020, code: '19-4052-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2020_19-4052-TCX.webp' },
+      { year: 2021, code: '13-0647-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2021_13-0647-TCX.webp' },
+      { year: 2021, code: '17-5104-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2021_17-5104-TCX.webp' },
+      { year: 2022, code: '17-3938-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2022_17-3938-TCX.webp' },
+      { year: 2023, code: '18-1750-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2023_18-1750-TCX.webp' },
+      { year: 2024, code: '13-1023-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2024_13-1023-TCX.webp' },
+      { year: 2025, code: '17-1230-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2025_17-1230-TCX.webp' }
+    ];
+
+    // Group images by year
+    const yearGroups = {};
+    imageFiles.forEach(file => {
+      if (!yearGroups[file.year]) {
+        yearGroups[file.year] = [];
+      }
+      yearGroups[file.year].push(file);
+    });
+
+    // Sort years in reverse chronological order (newest first)
+    const sortedYears = Object.keys(yearGroups).sort((a, b) => parseInt(b) - parseInt(a));
+
+    // Generate HTML
+    const gridContainer = document.getElementById('grid');
+    sortedYears.forEach(year => {
+      const yearGroup = document.createElement('div');
+      yearGroup.className = 'year-group';
+
+      const yearLabel = document.createElement('div');
+      yearLabel.className = 'year-label';
+      yearLabel.textContent = year;
+      yearGroup.appendChild(yearLabel);
+
+      const chipsContainer = document.createElement('div');
+      chipsContainer.className = 'chips-container';
+
+      yearGroups[year].forEach(file => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+
+        const img = document.createElement('img');
+        img.src = `file://${file.path}`;
+        img.alt = `Pantone ${file.code} (${year})`;
+        img.loading = 'lazy';
+
+        const code = document.createElement('div');
+        code.className = 'chip-code';
+        code.textContent = file.code;
+
+        chip.appendChild(img);
+        chip.appendChild(code);
+        chipsContainer.appendChild(chip);
+      });
+
+      yearGroup.appendChild(chipsContainer);
+      gridContainer.appendChild(yearGroup);
+    });
+  </script>
+</body>
+</html>

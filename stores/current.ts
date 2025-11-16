@@ -27,7 +27,7 @@ export interface LchValue {
 
 type PrevCurrentValue = { [key in keyof LchValue]?: undefined } | LchValue
 
-function randomColor(): LchValue {
+export function randomColor(): LchValue {
   return { a: 100, c: C_RANDOM, h: Math.round(360 * Math.random()), l: 0.7 }
 }
 

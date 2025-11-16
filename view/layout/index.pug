@@ -3,21 +3,26 @@ include ../field/mixin.pug
 include ../card/mixin.pug
 include ../link/mixin.pug
 
+h1.contest-page-title Guess the 2026 Pantone Color of the Year
+
 .layout
-  .layout_title
-    include ../title/index.pug
+  .layout_entry
+    .contest-info-panel#contest-info-panel
+      .contest-form-wrapper
+        h3.contest-info-title Your Entry
+        .contest_form_row
+          label.contest_label Your Name:
+            input.contest_input#contest-name(type="text" placeholder="Enter your name" required autocomplete="name")
+        .contest_form_row
+          label.contest_label Contact Info (email or phone):
+            input.contest_input#contest-contact(type="text" placeholder="email@example.com or phone" required autocomplete="email tel")
+      .contest_success#contest-success-msg
+        h3 Entry Submitted!
+        p Thank you for participating!
+        .contest_submitted_info#contest-submitted-info
+        button.reset-button#reset-contest(type="button") Next Person
+
   include ../main/index.pug
-  .layout_links
-    +link(
-      'help',
-      'Why OKLCH is better than ' + (LCH ? 'LCH' : 'RGB') + ' and HSL',
-      'https://evilmartians.com/chronicles/oklch-in-css-why-quit-rgb-hsl'
-    )
-    +link(
-      'palette',
-      'Build palette with OKLCH and APCA',
-      'https://harmonizer.evilmartians.com/'
-    )
 
   .layout_l
     +card('l')
@@ -30,5 +35,6 @@ include ../link/mixin.pug
       +card('3d')
     +card('a')
 
-  .layout_prefs
-    include ../settings/index.pug
+button.contest-submit-bottom#contest-submit-bottom(type="button") Submit My Guess
+
+button.admin-button#admin-button(type="button") Admin

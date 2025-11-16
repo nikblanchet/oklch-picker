@@ -1,3 +1,136 @@
+.contest-page-title {
+  margin: 20px auto 24px;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.layout_entry {
+  grid-area: entry;
+}
+
+.contest-info-panel {
+  width: var(--card-width);
+  height: var(--card-max-height);
+  padding: var(--card-top-padding) var(--card-padding) var(--card-padding);
+  background: var(--surface-1);
+  border-radius: 36px;
+}
+
+.contest-info-title {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.reset-button {
+  padding: 12px 24px;
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  background: var(--surface-ui-regular);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.reset-button:hover {
+  background: var(--surface-ui-accent);
+  transform: translateY(-1px);
+}
+
+@media (width < 830px) {
+  .contest-info-panel {
+    box-sizing: border-box;
+    width: 100%;
+  }
+}
+
+.contest-submit-bottom {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  z-index: 100;
+  padding: 16px 48px;
+  font-size: 18px;
+  font-weight: 700;
+  color: oklch(1 0 0);
+  text-shadow:
+    0 0 4px oklch(0 0 0 / 80%),
+    0 0 8px oklch(0 0 0 / 60%),
+    1px 1px 2px oklch(0 0 0);
+  cursor: pointer;
+  background: var(--current-color, linear-gradient(135deg, oklch(0.68 0.18 25), oklch(0.64 0.20 20)));
+  border: 3px solid oklch(0 0 0 / 30%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px oklch(0 0 0 / 25%);
+  transform: translateX(-50%);
+  transition: all 0.3s ease;
+}
+
+.contest-submit-bottom:hover {
+  box-shadow: 0 6px 20px oklch(0 0 0 / 35%);
+  filter: brightness(1.1);
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.contest-submit-bottom:active {
+  filter: brightness(0.95);
+  transform: translateX(-50%) translateY(0);
+}
+
+.contest-submit-bottom:disabled {
+  cursor: not-allowed;
+  opacity: 50%;
+}
+
+.contest-submit-bottom.is-hidden {
+  display: none;
+}
+
+.admin-button {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 99;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  background: var(--surface-ui-regular);
+  border: 2px solid var(--ui-border);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px oklch(0 0 0 / 15%);
+  transition: all 0.2s ease;
+}
+
+.admin-button:hover {
+  background: var(--surface-ui-accent);
+  box-shadow: 0 4px 12px oklch(0 0 0 / 25%);
+  transform: translateY(-2px);
+}
+
+.admin-button:active {
+  filter: brightness(0.95);
+  transform: translateY(0);
+}
+
+@media (width < 830px) {
+  .admin-button {
+    right: calc(20px + env(safe-area-inset-right, 0));
+    bottom: calc(20px + env(safe-area-inset-bottom, 0));
+  }
+
+  .contest-submit-bottom {
+    bottom: calc(20px + env(safe-area-inset-bottom, 0));
+  }
+}
+
 .layout {
   position: relative;
   display: grid;
@@ -11,13 +144,12 @@
 
   @media (width < 830px) {
     grid-template:
-      'title'
+      'entry'
+      'main'
       'L'
       'C'
       'H'
-      'extra'
-      'prefs'
-      'links';
+      'extra';
     padding-bottom: 450px;
 
     :is(body.is-main-collapsed) & {
@@ -27,10 +159,7 @@
 
   @media (width >= 830px) and (width < 1230px) {
     grid-template:
-      'title title'
-      'main  links'
-      'main  prefs'
-      'main  .'
+      'entry main'
       'L     C'
       'extra H';
     padding-bottom: 28px;
@@ -38,12 +167,9 @@
 
   @media (width >= 1230px) {
     grid-template:
-      'title title title'
-      'main  L     C'
+      'entry L     C'
       'main  extra H'
-      'links extra H'
-      'prefs extra H'
-      'prefs extra .';
+      'main  extra H';
   }
 
   @media (width >= 1230px) and (width < 1320px) {
@@ -52,6 +178,7 @@
 }
 
 .layout_title {
+  display: none !important;
   grid-area: title;
 }
 
@@ -68,8 +195,8 @@
     z-index: 10;
     margin-top: 21px;
     overflow: hidden;
-    transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
     transform: translateY(min(var(--touch-diff, 0), var(--end-position)));
+    transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
 
     :is(body.is-main-collapsed) & {
       transform: translateY(
@@ -81,7 +208,7 @@
 
 .layout_links {
   position: relative;
-  display: grid;
+  display: none !important;
   grid-area: links;
   grid-template-columns: 1fr;
   gap: 4px;
@@ -114,13 +241,18 @@
   grid-area: extra;
 }
 
+.card.is-a {
+  display: none !important;
+}
+
 .layout_prefs {
+  display: none !important;
   grid-area: prefs;
 }
 
 .layout_3d {
-  height: 0;
-  overflow: hidden;
+  height: calc(var(--card-max-height) + 4px);
+  overflow: visible;
   transition: height 400ms;
 
   &.is-shown {

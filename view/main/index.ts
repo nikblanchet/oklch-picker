@@ -1,12 +1,12 @@
-import { trackEvent } from '../analytics/index.ts'
+import { buildForCSS } from '../../lib/colors.ts'
+import { current, randomColor } from '../../stores/current.ts'
+import { contest, primerColor, submitEntry } from '../../stores/contest.ts'
 
 const THRESHOLD = 100
 
 let main = document.querySelector<HTMLElement>('.main')!
 
 let expand = main.querySelector<HTMLButtonElement>('.main_expand')!
-
-let links = main.querySelectorAll<HTMLAnchorElement>('a')
 
 let mobile = window.matchMedia('(max-width:830px)')
 
@@ -74,11 +74,102 @@ expand.addEventListener('click', () => {
   changeExpanded(!isExpanded)
 })
 
-for (let link of links) {
-  let event = 'Open Evil Martians'
-  if (link.href.includes('sitnik')) event = 'Open Sitnik page'
-  if (link.href.includes('romanshamin')) event = 'Open Shamin page'
-  link.addEventListener('click', () => {
-    trackEvent(event)
+let nameInput = document.querySelector<HTMLInputElement>('#contest-name')
+let contactInput = document.querySelector<HTMLInputElement>('#contest-contact')
+let submitBtn = document.querySelector<HTMLButtonElement>('#contest-submit-bottom')
+let successDiv = document.querySelector<HTMLDivElement>('#contest-success-msg')
+let submittedInfo = document.querySelector<HTMLDivElement>('#contest-submitted-info')
+let contestFormWrapper = document.querySelector<HTMLDivElement>('.contest-form-wrapper')
+let resetBtn = document.querySelector<HTMLButtonElement>('#reset-contest')
+
+function updateButtonColor(): void {
+  try {
+    if (submitBtn) {
+      let color = current.get()
+      let colorCSS = buildForCSS(color.l, color.c, color.h, 1)
+      submitBtn.style.setProperty('--current-color', colorCSS)
+    }
+  } catch (e) {
+    console.error('Error updating button color:', e)
+  }
+}
+
+current.subscribe(() => {
+  updateButtonColor()
+})
+
+updateButtonColor()
+
+// Always set a random color on page load for the contest
+let initialColor = randomColor()
+current.set(initialColor)
+primerColor.set(initialColor)
+
+// Start with form visible
+
+if (submitBtn) {
+  submitBtn.addEventListener('click', () => {
+    try {
+      let name = nameInput?.value.trim() || ''
+      let contact = contactInput?.value.trim() || ''
+
+      if (!name || !contact) {
+        alert('Please fill in both your name and contact info')
+        return
+      }
+
+      let guessedColorValue = current.get()
+      let primerColorValue = primerColor.get()
+
+      if (!primerColorValue) {
+        primerColorValue = guessedColorValue
+      }
+
+      submitEntry(name, guessedColorValue, contact, primerColorValue)
+
+      if (submittedInfo) {
+        submittedInfo.innerHTML = `
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Contact:</strong> ${contact}</p>
+        <p><strong>Your color:</strong> OKLCH(${guessedColorValue.l.toFixed(2)} ${guessedColorValue.c.toFixed(3)} ${guessedColorValue.h.toFixed(1)})</p>
+        <p style="margin-top: 12px; font-style: italic;">Returning to form in 3 seconds...</p>
+      `
+      }
+
+      contestFormWrapper?.classList.add('is-hidden')
+      successDiv?.classList.add('is-visible')
+      submitBtn?.classList.add('is-hidden')
+
+      // Clear the form inputs
+      if (nameInput) nameInput.value = ''
+      if (contactInput) contactInput.value = ''
+
+      // After 3 seconds, hide success, show form, and set random color
+      setTimeout(() => {
+        // Generate new random color for next person
+        let newRandomColor = randomColor()
+        current.set(newRandomColor)
+        primerColor.set(newRandomColor)
+
+        contestFormWrapper?.classList.remove('is-hidden')
+        successDiv?.classList.remove('is-visible')
+        submitBtn?.classList.remove('is-hidden')
+      }, 3000)
+    } catch (e) {
+      console.error('Error submitting entry:', e)
+      alert('There was an error submitting your entry. Please try again.')
+    }
   })
 }
+
+if (resetBtn) {
+  resetBtn.addEventListener('click', () => {
+    contestFormWrapper?.classList.remove('is-hidden')
+    successDiv?.classList.remove('is-visible')
+    submitBtn?.classList.remove('is-hidden')
+  })
+}
+
+let hiddenStyle = document.createElement('style')
+hiddenStyle.textContent = '.is-hidden { display: none !important; }'
+document.head.appendChild(hiddenStyle)

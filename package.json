@@ -23,6 +23,7 @@
     "@csstools/postcss-oklab-function": "^4.0.12",
     "@nanostores/persistent": "^1.2.0",
     "autoprefixer": "^10.4.21",
+    "color-name-list": "^13.14.0",
     "culori": "^4.0.2",
     "delaunator": "^5.0.1",
     "jstransformer-markdown-it": "^3.0.0",
