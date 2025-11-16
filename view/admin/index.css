@@ -14,8 +14,8 @@
 .admin-overlay {
   position: absolute;
   inset: 0;
-  background: oklch(0 0 0 / 70%);
-  backdrop-filter: blur(4px);
+  background: oklch(0 0 0 / 85%);
+  backdrop-filter: blur(8px);
 }
 
 .admin-panel {
@@ -25,9 +25,10 @@
   max-height: 90vh;
   padding: 32px;
   overflow-y: auto;
-  background: var(--back-color);
+  background: oklch(0.98 0 0);
+  border: 1px solid oklch(0.7 0 0 / 20%);
   border-radius: 12px;
-  box-shadow: 0 20px 60px oklch(0 0 0 / 30%);
+  box-shadow: 0 20px 60px oklch(0 0 0 / 50%);
 }
 
 .admin-panel h2 {

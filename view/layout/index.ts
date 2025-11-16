@@ -25,4 +25,6 @@ if (adminButton) {
       alert('Incorrect password')
     }
   })
+} else {
+  console.error('Admin button not found in DOM')
 }

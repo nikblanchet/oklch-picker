@@ -1,19 +1,11 @@
 import type { Color } from 'culori/fn'
 import { formatHex, modeOklch, modeRgb, useMode } from 'culori/fn'
-// @ts-ignore - color-name-list doesn't have TypeScript definitions
-import * as colorNameListModule from 'color-name-list'
-
-let colorNameList = (colorNameListModule as any).default || colorNameListModule
 
 let rgb = useMode(modeRgb)
 let oklch = useMode(modeOklch)
 
-// Build a lookup for nearest color matching
-let colorNames = colorNameList
-  .map((item: { hex: string; name: string }) => ({
-    hex: item.hex.toLowerCase(),
-    name: item.name
-  }))
+// Simplified color naming - TODO: Add color-name-list later if needed
+let colorNames: Array<{ hex: string; name: string }> = []
 
 /**
  * Get the basic hex representation of a color
@@ -32,6 +24,12 @@ export function getColorHex(color: Color): string {
  */
 export function getNearestColorName(color: Color): { name: string; hex: string } {
   let hex = getColorHex(color)
+
+  // If no color library loaded, return hex as name
+  if (colorNames.length === 0) {
+    return { name: hex.toUpperCase(), hex }
+  }
+
   let rgbColor = rgb(color)
 
   if (!rgbColor || rgbColor.r === undefined) {

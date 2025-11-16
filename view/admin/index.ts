@@ -22,6 +22,18 @@ let exportBtn = $<HTMLButtonElement>('#export-entries')
 let clearBtn = $<HTMLButtonElement>('#clear-all-data')
 let closeBtn = $<HTMLButtonElement>('#admin-close')
 
+console.log('Admin panel initialized:', {
+  modal: !!modal,
+  pantonePreview: !!pantonePreview,
+  pantoneInfo: !!pantoneInfo,
+  setPantoneBtn: !!setPantoneBtn,
+  entriesCount: !!entriesCount,
+  entriesContainer: !!entriesContainer,
+  exportBtn: !!exportBtn,
+  clearBtn: !!clearBtn,
+  closeBtn: !!closeBtn
+})
+
 function updatePantoneDisplay(): void {
   let state = contest.get()
   if (state.pantoneColor) {
@@ -122,8 +134,14 @@ function updateEntriesList(): void {
 }
 
 showAdminPanel.subscribe(visible => {
+  console.log('showAdminPanel changed:', visible, 'modal element:', modal)
   if (visible) {
-    modal?.classList.add('is-visible')
+    if (modal) {
+      modal.classList.add('is-visible')
+      console.log('Added is-visible class to modal')
+    } else {
+      console.error('Modal element not found!')
+    }
     updatePantoneDisplay()
     updateEntriesList()
   } else {

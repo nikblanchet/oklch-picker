@@ -17,6 +17,7 @@ body {
     box-sizing: border-box;
     width: 100%;
     padding-top: 0;
+    padding-bottom: calc(140px + env(safe-area-inset-bottom, 0));
     border-radius: 36px 36px 0 0;
     box-shadow:
       0 0 2px var(--surface-2-shadow),
@@ -175,8 +176,9 @@ body {
   font-size: 15px;
   color: var(--text-color);
   background: var(--field-back);
-  border: 1px solid var(--border-color);
+  border: 2px solid oklch(0.7 0 0 / 40%);
   border-radius: 6px;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .contest_input:focus {

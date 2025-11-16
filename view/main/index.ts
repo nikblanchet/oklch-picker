@@ -12,7 +12,8 @@ let mobile = window.matchMedia('(max-width:830px)')
 
 let startY = 0
 
-let isExpanded = expand.ariaExpanded === 'true'
+// Start expanded on mobile for contest
+let isExpanded = expand.ariaExpanded === 'true' || mobile.matches
 
 function changeExpanded(shouldExpand = false): void {
   if (shouldExpand === isExpanded) return
@@ -55,12 +56,13 @@ function onScroll(): void {
 
 function init(): void {
   if (mobile.matches) {
-    window.addEventListener('scroll', onScroll, { once: true })
+    // Removed scroll collapse - keep panel visible for contest use
+    // window.addEventListener('scroll', onScroll, { once: true })
     main.addEventListener('touchstart', onTouchStart)
     main.addEventListener('touchmove', onTouchMove)
     main.addEventListener('touchend', onTouchEnd)
   } else {
-    window.removeEventListener('scroll', onScroll)
+    // window.removeEventListener('scroll', onScroll)
     main.removeEventListener('touchstart', onTouchStart)
     main.removeEventListener('touchmove', onTouchMove)
     main.removeEventListener('touchend', onTouchEnd)
@@ -69,6 +71,11 @@ function init(): void {
 
 init()
 mobile.addEventListener('change', init)
+
+// Ensure panel starts expanded on mobile
+if (mobile.matches) {
+  changeExpanded(true)
+}
 
 expand.addEventListener('click', () => {
   changeExpanded(!isExpanded)
