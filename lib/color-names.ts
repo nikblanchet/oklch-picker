@@ -1,7 +1,9 @@
 import type { Color } from 'culori/fn'
 import { formatHex, modeOklch, modeRgb, useMode } from 'culori/fn'
 // @ts-ignore - color-name-list doesn't have TypeScript definitions
-import colorNameList from 'color-name-list'
+import * as colorNameListModule from 'color-name-list'
+
+let colorNameList = (colorNameListModule as any).default || colorNameListModule
 
 let rgb = useMode(modeRgb)
 let oklch = useMode(modeOklch)
