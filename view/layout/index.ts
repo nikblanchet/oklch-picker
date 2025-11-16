@@ -2,6 +2,7 @@ import { toggleVisibility } from '../../lib/dom.ts'
 import { showAdminPanel } from '../../stores/contest.ts'
 import { show3d } from '../../stores/settings.ts'
 import { url } from '../../stores/url.ts'
+import { current } from '../../stores/current.ts'
 
 let layout = document.querySelector<HTMLDivElement>('.layout')!
 let card3d = document.querySelector<HTMLDivElement>('.layout_3d')!
@@ -64,6 +65,22 @@ passwordInput?.addEventListener('keydown', (e) => {
 let seePastBtn = document.querySelector<HTMLButtonElement>('#see-past-btn')
 if (seePastBtn) {
   seePastBtn.addEventListener('click', () => {
+    // Save current state to sessionStorage before navigation
+    try {
+      let nameInput = document.querySelector<HTMLInputElement>('#contest-name')
+      let contactInput = document.querySelector<HTMLInputElement>('#contest-contact')
+      let currentColor = current.get()
+
+      sessionStorage.setItem('savedFormState', JSON.stringify({
+        name: nameInput?.value || '',
+        contact: contactInput?.value || '',
+        color: currentColor,
+        timestamp: Date.now()
+      }))
+    } catch (e) {
+      console.error('Error saving form state:', e)
+    }
+
     window.location.href = '/reports/pantone-colors-of-the-year.html'
   })
 }

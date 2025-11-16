@@ -105,12 +105,38 @@ current.subscribe(() => {
   updateButtonColor()
 })
 
-updateButtonColor()
+// Check for saved state first, then set color
+let hasRestoredColor = false
+try {
+  let savedState = sessionStorage.getItem('savedFormState')
+  if (savedState) {
+    let state = JSON.parse(savedState)
+    // Only restore if saved within last 5 minutes (prevents stale data)
+    if (Date.now() - state.timestamp < 5 * 60 * 1000) {
+      if (nameInput && state.name) nameInput.value = state.name
+      if (contactInput && state.contact) contactInput.value = state.contact
+      // Restore color if present
+      if (state.color) {
+        current.set(state.color)
+        primerColor.set(state.color)
+        hasRestoredColor = true
+      }
+    }
+    // Clear the saved state after restoring
+    sessionStorage.removeItem('savedFormState')
+  }
+} catch (e) {
+  console.error('Error restoring form state:', e)
+}
 
-// Always set a random color on page load for the contest
-let initialColor = randomColor()
-current.set(initialColor)
-primerColor.set(initialColor)
+// Only set random color if we didn't restore a saved color
+if (!hasRestoredColor) {
+  let initialColor = randomColor()
+  current.set(initialColor)
+  primerColor.set(initialColor)
+}
+
+updateButtonColor()
 
 // Start with form visible
 

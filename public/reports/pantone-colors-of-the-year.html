@@ -33,18 +33,22 @@
       padding: 12px 32px;
       font-size: 16px;
       font-weight: 600;
-      color: #fff;
-      background: linear-gradient(135deg, #6b4fbb, #5a3d99);
-      border: none;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      color: oklch(1 0 0);
+      background: linear-gradient(135deg, oklch(0.68 0.18 25), oklch(0.64 0.20 20));
+      border: 3px solid oklch(0 0 0 / 30%);
+      border-radius: 10px;
+      box-shadow: 0 4px 12px oklch(0 0 0 / 25%);
+      text-shadow:
+        0 0 4px oklch(0 0 0 / 80%),
+        0 0 8px oklch(0 0 0 / 60%),
+        1px 1px 2px oklch(0 0 0);
       cursor: pointer;
       transition: all 0.3s ease;
     }
 
     .return-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 6px 20px oklch(0 0 0 / 35%);
       filter: brightness(1.1);
     }
 
@@ -216,34 +220,34 @@
   <script>
     // Image data extracted from the directory listing
     const imageFiles = [
-      { year: 2000, code: '15-4020-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2000_15-4020-TCX.webp' },
-      { year: 2001, code: '17-2031-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2001_17-2031-TCX.webp' },
-      { year: 2002, code: '19-1664-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2002_19-1664-TCX.webp' },
-      { year: 2003, code: '14-4811-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2003_14-4811-TCX.webp' },
-      { year: 2004, code: '17-1456-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2004_17-1456-TCX.webp' },
-      { year: 2005, code: '15-5217-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2005_15-5217-TCX.webp' },
-      { year: 2006, code: '13-1106-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2006_13-1106-TCX.webp' },
-      { year: 2007, code: '19-1557-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2007_19-1557-TCX.webp' },
-      { year: 2008, code: '18-3943-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2008_18-3943-TCX.webp' },
-      { year: 2009, code: '14-0848-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2009_14-0848-TCX.webp' },
-      { year: 2010, code: '15-5519-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2010_15-5519-TCX.webp' },
-      { year: 2011, code: '18-2120-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2011_18-2120-TCX.webp' },
-      { year: 2012, code: '17-1463-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2012_17-1463-TCX.webp' },
-      { year: 2013, code: '17-5641-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2013_17-5641-TCX.webp' },
-      { year: 2014, code: '18-3224-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2014_18-3224-TCX.webp' },
-      { year: 2015, code: '18-1438-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2015_18-1438-TCX.webp' },
-      { year: 2016, code: '13-1520-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2016_13-1520-TCX.webp' },
-      { year: 2016, code: '15-3919-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2016_15-3919-TCX.webp' },
-      { year: 2017, code: '15-0343-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2017_15-0343-TCX.webp' },
-      { year: 2018, code: '18-3838-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2018_18-3838-TCX.webp' },
-      { year: 2019, code: '16-1546-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2019_16-1546-TCX.webp' },
-      { year: 2020, code: '19-4052-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2020_19-4052-TCX.webp' },
-      { year: 2021, code: '13-0647-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2021_13-0647-TCX.webp' },
-      { year: 2021, code: '17-5104-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2021_17-5104-TCX.webp' },
-      { year: 2022, code: '17-3938-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2022_17-3938-TCX.webp' },
-      { year: 2023, code: '18-1750-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2023_18-1750-TCX.webp' },
-      { year: 2024, code: '13-1023-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2024_13-1023-TCX.webp' },
-      { year: 2025, code: '17-1230-TCX', path: '/Users/nik/Downloads/Pantone Colors of the Year/2025_17-1230-TCX.webp' }
+      { year: 2000, code: '15-4020-TCX', path: '/images/pantone/2000_15-4020-TCX.webp' },
+      { year: 2001, code: '17-2031-TCX', path: '/images/pantone/2001_17-2031-TCX.webp' },
+      { year: 2002, code: '19-1664-TCX', path: '/images/pantone/2002_19-1664-TCX.webp' },
+      { year: 2003, code: '14-4811-TCX', path: '/images/pantone/2003_14-4811-TCX.webp' },
+      { year: 2004, code: '17-1456-TCX', path: '/images/pantone/2004_17-1456-TCX.webp' },
+      { year: 2005, code: '15-5217-TCX', path: '/images/pantone/2005_15-5217-TCX.webp' },
+      { year: 2006, code: '13-1106-TCX', path: '/images/pantone/2006_13-1106-TCX.webp' },
+      { year: 2007, code: '19-1557-TCX', path: '/images/pantone/2007_19-1557-TCX.webp' },
+      { year: 2008, code: '18-3943-TCX', path: '/images/pantone/2008_18-3943-TCX.webp' },
+      { year: 2009, code: '14-0848-TCX', path: '/images/pantone/2009_14-0848-TCX.webp' },
+      { year: 2010, code: '15-5519-TCX', path: '/images/pantone/2010_15-5519-TCX.webp' },
+      { year: 2011, code: '18-2120-TCX', path: '/images/pantone/2011_18-2120-TCX.webp' },
+      { year: 2012, code: '17-1463-TCX', path: '/images/pantone/2012_17-1463-TCX.webp' },
+      { year: 2013, code: '17-5641-TCX', path: '/images/pantone/2013_17-5641-TCX.webp' },
+      { year: 2014, code: '18-3224-TCX', path: '/images/pantone/2014_18-3224-TCX.webp' },
+      { year: 2015, code: '18-1438-TCX', path: '/images/pantone/2015_18-1438-TCX.webp' },
+      { year: 2016, code: '13-1520-TCX', path: '/images/pantone/2016_13-1520-TCX.webp' },
+      { year: 2016, code: '15-3919-TCX', path: '/images/pantone/2016_15-3919-TCX.webp' },
+      { year: 2017, code: '15-0343-TCX', path: '/images/pantone/2017_15-0343-TCX.webp' },
+      { year: 2018, code: '18-3838-TCX', path: '/images/pantone/2018_18-3838-TCX.webp' },
+      { year: 2019, code: '16-1546-TCX', path: '/images/pantone/2019_16-1546-TCX.webp' },
+      { year: 2020, code: '19-4052-TCX', path: '/images/pantone/2020_19-4052-TCX.webp' },
+      { year: 2021, code: '13-0647-TCX', path: '/images/pantone/2021_13-0647-TCX.webp' },
+      { year: 2021, code: '17-5104-TCX', path: '/images/pantone/2021_17-5104-TCX.webp' },
+      { year: 2022, code: '17-3938-TCX', path: '/images/pantone/2022_17-3938-TCX.webp' },
+      { year: 2023, code: '18-1750-TCX', path: '/images/pantone/2023_18-1750-TCX.webp' },
+      { year: 2024, code: '13-1023-TCX', path: '/images/pantone/2024_13-1023-TCX.webp' },
+      { year: 2025, code: '17-1230-TCX', path: '/images/pantone/2025_17-1230-TCX.webp' }
     ];
 
     // Group images by year
@@ -277,7 +281,7 @@
         chip.className = 'chip';
 
         const img = document.createElement('img');
-        img.src = `file://${file.path}`;
+        img.src = file.path;
         img.alt = `Pantone ${file.code} (${year})`;
         img.loading = 'lazy';
 
@@ -293,6 +297,24 @@
       yearGroup.appendChild(chipsContainer);
       gridContainer.appendChild(yearGroup);
     });
+
+    // Apply the user's picked color to the Return button
+    try {
+      const savedState = sessionStorage.getItem('savedFormState');
+      if (savedState) {
+        const state = JSON.parse(savedState);
+        if (state.color) {
+          const { l, c, h } = state.color;
+          const colorCSS = `oklch(${l} ${c} ${h})`;
+          const returnBtn = document.querySelector('.return-btn');
+          if (returnBtn) {
+            returnBtn.style.background = colorCSS;
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error applying color to button:', e);
+    }
   </script>
 </body>
 </html>

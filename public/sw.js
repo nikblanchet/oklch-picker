@@ -1,9 +1,10 @@
-const CACHE_NAME = 'pantone-contest-v1'
+const CACHE_NAME = 'pantone-contest-v2'
 const urlsToCache = [
   '/',
   '/index.html',
   '/oklch.svg',
-  '/apple-touch-icon-oklch.png'
+  '/apple-touch-icon-oklch.png',
+  '/reports/pantone-colors-of-the-year.html'
 ]
 
 // Install service worker and cache resources
