@@ -19,9 +19,38 @@
 
     h1 {
       text-align: center;
-      margin-bottom: 40px;
+      margin-bottom: 20px;
       font-size: 2.5em;
       color: #222;
+    }
+
+    .return-btn-container {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .return-btn {
+      padding: 12px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, #6b4fbb, #5a3d99);
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .return-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+      filter: brightness(1.1);
+    }
+
+    .return-btn:active {
+      transform: translateY(0);
+      filter: brightness(0.95);
     }
 
     .grid-container {
@@ -179,6 +208,9 @@
 </head>
 <body>
   <h1>Pantone Colors of the Year (2000-2025)</h1>
+  <div class="return-btn-container">
+    <button class="return-btn" onclick="window.location.href='/'">Return to Guess</button>
+  </div>
   <div class="grid-container" id="grid"></div>
 
   <script>

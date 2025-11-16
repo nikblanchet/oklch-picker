@@ -58,87 +58,79 @@
   }
 }
 
-.contest-submit-bottom {
+.bottom-buttons {
   position: fixed;
-  bottom: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0));
   left: 50%;
-  z-index: 100;
-  padding: 16px 48px;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.3;
+  z-index: 101;
+  display: flex;
+  gap: 12px;
+  transform: translateX(-50%);
+}
+
+.bottom-btn {
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  border: 3px solid oklch(0 0 0 / 30%);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px oklch(0 0 0 / 25%);
+  transition: all 0.3s ease;
+}
+
+.bottom-btn .btn-line {
+  display: block;
+}
+
+.submit-btn {
   color: oklch(1 0 0);
   text-shadow:
     0 0 4px oklch(0 0 0 / 80%),
     0 0 8px oklch(0 0 0 / 60%),
     1px 1px 2px oklch(0 0 0);
-  cursor: pointer;
   background: var(--current-color, linear-gradient(135deg, oklch(0.68 0.18 25), oklch(0.64 0.20 20)));
-  border: 3px solid oklch(0 0 0 / 30%);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px oklch(0 0 0 / 25%);
-  transform: translateX(-50%);
-  transition: all 0.3s ease;
 }
 
-.contest-submit-bottom:hover {
+.submit-btn:hover {
   box-shadow: 0 6px 20px oklch(0 0 0 / 35%);
   filter: brightness(1.1);
-  transform: translateX(-50%) translateY(-2px);
-}
-
-.contest-submit-bottom:active {
-  filter: brightness(0.95);
-  transform: translateX(-50%) translateY(0);
-}
-
-.contest-submit-bottom:disabled {
-  cursor: not-allowed;
-  opacity: 50%;
-}
-
-.contest-submit-bottom.is-hidden {
-  display: none;
-}
-
-.admin-button {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 99;
-  padding: 10px 24px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-  cursor: pointer;
-  background: var(--surface-ui-regular);
-  border: 2px solid var(--ui-border);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px oklch(0 0 0 / 15%);
-  transition: all 0.2s ease;
-}
-
-.admin-button:hover {
-  background: var(--surface-ui-accent);
-  box-shadow: 0 4px 12px oklch(0 0 0 / 25%);
   transform: translateY(-2px);
 }
 
-.admin-button:active {
+.see-past-btn,
+.admin-btn {
+  color: var(--text-primary);
+  background: var(--surface-ui-regular);
+  border-color: var(--ui-border);
+}
+
+.see-past-btn:hover,
+.admin-btn:hover {
+  background: var(--surface-ui-accent);
+  box-shadow: 0 4px 16px oklch(0 0 0 / 30%);
+  transform: translateY(-2px);
+}
+
+.bottom-btn:active {
   filter: brightness(0.95);
   transform: translateY(0);
 }
 
-@media (width < 830px) {
-  .admin-button {
-    right: calc(20px + env(safe-area-inset-right, 0));
-    bottom: calc(80px + env(safe-area-inset-bottom, 0));
-    z-index: 101;
+.submit-btn.is-hidden {
+  display: none;
+}
+
+@media (width < 600px) {
+  .bottom-buttons {
+    gap: 8px;
   }
 
-  .contest-submit-bottom {
-    bottom: calc(20px + env(safe-area-inset-bottom, 0));
-    z-index: 101;
+  .bottom-btn {
+    padding: 10px 16px;
+    font-size: 13px;
   }
 }
 
@@ -269,4 +261,97 @@
   &.is-shown {
     height: calc(var(--card-max-height) + 4px);
   }
+
+  @media (width < 830px) {
+    display: none !important;
+  }
+}
+
+.password-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1002;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-modal.is-visible {
+  display: flex;
+}
+
+.password-overlay {
+  position: absolute;
+  inset: 0;
+  background: oklch(0 0 0 / 70%);
+  backdrop-filter: blur(4px);
+}
+
+.password-panel {
+  position: relative;
+  width: 90%;
+  max-width: 400px;
+  padding: 24px;
+  background: oklch(0.98 0 0);
+  border: 1px solid oklch(0.7 0 0 / 20%);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px oklch(0 0 0 / 50%);
+}
+
+.password-panel h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.password-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 16px;
+  font-family: inherit;
+  font-size: 16px;
+  background: var(--field-back);
+  border: 2px solid oklch(0.7 0 0 / 40%);
+  border-radius: 6px;
+}
+
+.password-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px oklch(from var(--accent) l c h / 20%);
+}
+
+.password-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.password-actions button {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.password-cancel {
+  color: var(--text-primary);
+  background: var(--surface-ui-regular);
+}
+
+.password-cancel:hover {
+  background: var(--surface-ui-accent);
+}
+
+.password-submit {
+  color: oklch(1 0 0);
+  background: var(--accent);
+}
+
+.password-submit:hover {
+  filter: brightness(1.1);
 }
