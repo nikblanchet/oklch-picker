@@ -23,7 +23,7 @@
       ]
     },
     {
-      "source": "/(.*).webmanifest",
+      "source": "/:file.webmanifest",
       "headers": [
         {
           "key": "Cache-Control",
