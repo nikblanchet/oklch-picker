@@ -24,28 +24,17 @@ export default defineConfig({
       devOptions: {
         enabled: true
       },
-      manifest: {
-        name: 'Pantone 2026 Color Guess',
-        short_name: 'Color Guess',
-        description: 'Guess the Pantone 2026 Color of the Year',
-        theme_color: '#6b4fbb',
-        background_color: '#ffffff',
-        display: 'standalone',
-        start_url: '/',
-        scope: '/',
-        icons: [
-          {
-            src: '/apple-touch-icon-oklch.png',
-            sizes: '180x180',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ]
+      manifest: false,
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,png,svg,webp,woff2,ico,webmanifest}']
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,webp,woff2,ico,webmanifest}'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/api/],
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -66,7 +55,14 @@ export default defineConfig({
             handler: 'NetworkFirst',
             options: {
               cacheName: 'pages',
-              networkTimeoutSeconds: 3
+              networkTimeoutSeconds: 3,
+              plugins: [
+                {
+                  handlerDidError: async () => {
+                    return caches.match('/index.html')
+                  }
+                }
+              ]
             }
           }
         ]
