@@ -25,12 +25,9 @@ export default defineConfig({
         enabled: true
       },
       manifest: false,
-      injectManifest: {
-        globPatterns: ['**/*.{js,css,html,png,svg,webp,woff2,ico,webmanifest}']
-      },
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,webp,woff2,ico,webmanifest}'],
-        navigateFallback: 'index.html',
+        navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/],
         skipWaiting: true,
         clientsClaim: true,
