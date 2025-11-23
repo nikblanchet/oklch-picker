@@ -20,6 +20,7 @@ export default defineConfig({
     }),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'inline',
       includeAssets: ['**/*'],
       devOptions: {
         enabled: true
