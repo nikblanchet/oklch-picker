@@ -23,7 +23,7 @@
       ]
     },
     {
-      "source": "/:file.webmanifest",
+      "source": "/:file(lch|oklch).webmanifest",
       "headers": [
         {
           "key": "Cache-Control",
