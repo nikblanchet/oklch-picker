@@ -27,7 +27,8 @@ export default defineConfig({
       },
       manifest: false,
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,svg,webp,woff2,ico,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+        globIgnores: ['**/node_modules/**/*', '**/registerSW.js'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/],
         skipWaiting: true,
