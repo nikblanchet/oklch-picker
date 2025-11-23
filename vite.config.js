@@ -49,14 +49,16 @@ export default defineConfig({
           },
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
+            handler: 'CacheFirst',
             options: {
               cacheName: 'pages',
-              networkTimeoutSeconds: 3,
               plugins: [
                 {
-                  handlerDidError: async () => {
-                    return caches.match('/index.html')
+                  cacheWillUpdate: async ({ response }) => {
+                    if (response && response.type === 'opaqueredirect') {
+                      return null
+                    }
+                    return response
                   }
                 }
               ]
