@@ -23,7 +23,20 @@
       ]
     },
     {
-      "source": "/:file(lch|oklch).webmanifest",
+      "source": "/lch.webmanifest",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        }
+      ]
+    },
+    {
+      "source": "/oklch.webmanifest",
       "headers": [
         {
           "key": "Cache-Control",
