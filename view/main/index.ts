@@ -1,108 +1,46 @@
 import { buildForCSS } from '../../lib/colors.ts'
 import { current, randomColor } from '../../stores/current.ts'
-import { contest, primerColor, submitEntry } from '../../stores/contest.ts'
-
-const THRESHOLD = 100
-
-let main = document.querySelector<HTMLElement>('.main')!
-
-let expand = main.querySelector<HTMLButtonElement>('.main_expand')!
-
-let mobile = window.matchMedia('(max-width:830px)')
-
-let startY = 0
-
-// Start expanded on mobile for contest
-let isExpanded = expand.ariaExpanded === 'true' || mobile.matches
-
-function changeExpanded(shouldExpand = false): void {
-  if (shouldExpand === isExpanded) return
-
-  isExpanded = shouldExpand
-  expand.ariaExpanded = String(isExpanded)
-  document.body.classList.toggle('is-main-collapsed', !isExpanded)
-}
-
-function onTouchStart(event: TouchEvent): void {
-  startY = event.touches[0].clientY
-}
-
-function onTouchMove(event: TouchEvent): void {
-  event.preventDefault()
-  let endY = event.changedTouches[0].clientY
-  let diff = endY - startY
-  let allowPositive = isExpanded && diff > 0
-  let allowNegative = !isExpanded && diff < 0
-
-  if (allowPositive || allowNegative) {
-    main.style.setProperty('--touch-diff', `${diff}px`)
-  }
-}
-
-function onTouchEnd(event: TouchEvent): void {
-  let endY = event.changedTouches[0].clientY
-  let diff = startY - endY
-
-  main.style.removeProperty('--touch-diff')
-
-  if (Math.abs(diff) > THRESHOLD) {
-    changeExpanded(diff > 0)
-  }
-}
-
-function onScroll(): void {
-  changeExpanded(false)
-}
-
-function init(): void {
-  if (mobile.matches) {
-    // Removed scroll collapse - keep panel visible for contest use
-    // window.addEventListener('scroll', onScroll, { once: true })
-    main.addEventListener('touchstart', onTouchStart)
-    main.addEventListener('touchmove', onTouchMove)
-    main.addEventListener('touchend', onTouchEnd)
-  } else {
-    // window.removeEventListener('scroll', onScroll)
-    main.removeEventListener('touchstart', onTouchStart)
-    main.removeEventListener('touchmove', onTouchMove)
-    main.removeEventListener('touchend', onTouchEnd)
-  }
-}
-
-init()
-mobile.addEventListener('change', init)
-
-// Ensure panel starts expanded on mobile
-if (mobile.matches) {
-  changeExpanded(true)
-}
-
-expand.addEventListener('click', () => {
-  changeExpanded(!isExpanded)
-})
+import { clearCurrentEntry, primerColor, submitEntry, submitting } from '../../stores/contest.ts'
 
 let nameInput = document.querySelector<HTMLInputElement>('#contest-name')
 let contactInput = document.querySelector<HTMLInputElement>('#contest-contact')
 let submitBtn = document.querySelector<HTMLButtonElement>('#contest-submit-bottom')
-let successDiv = document.querySelector<HTMLDivElement>('#contest-success-msg')
-let submittedInfo = document.querySelector<HTMLDivElement>('#contest-submitted-info')
 let contestFormWrapper = document.querySelector<HTMLDivElement>('.contest-form-wrapper')
-let resetBtn = document.querySelector<HTMLButtonElement>('#reset-contest')
+let bottomButtons = document.querySelector<HTMLDivElement>('.bottom-buttons')
 
-function updateButtonColor(): void {
+// Full-screen success modal elements
+let successModal = document.querySelector<HTMLDivElement>('#success-modal')
+let successDetails = document.querySelector<HTMLDivElement>('#success-details')
+let successDismiss = document.querySelector<HTMLButtonElement>('#success-dismiss')
+
+// Store submitted values for edit functionality
+let lastSubmittedName = ''
+let lastSubmittedContact = ''
+
+function updateColors(): void {
   try {
+    let color = current.get()
+    let colorCSS = buildForCSS(color.l, color.c, color.h, 1)
+
+    // Update page background
+    document.body.style.setProperty('--current-color', colorCSS)
+
+    // Update submit button
     if (submitBtn) {
-      let color = current.get()
-      let colorCSS = buildForCSS(color.l, color.c, color.h, 1)
       submitBtn.style.setProperty('--current-color', colorCSS)
     }
+
+    // Update bottom buttons container for mobile
+    if (bottomButtons) {
+      bottomButtons.style.setProperty('--current-color', colorCSS)
+    }
   } catch (e) {
-    console.error('Error updating button color:', e)
+    console.error('Error updating colors:', e)
   }
 }
 
 current.subscribe(() => {
-  updateButtonColor()
+  updateColors()
 })
 
 // Check for saved state first, then set color
@@ -136,12 +74,14 @@ if (!hasRestoredColor) {
   primerColor.set(initialColor)
 }
 
-updateButtonColor()
+updateColors()
 
 // Start with form visible
 
 if (submitBtn) {
-  submitBtn.addEventListener('click', () => {
+  let originalButtonHTML = submitBtn.innerHTML
+
+  submitBtn.addEventListener('click', async () => {
     try {
       let name = nameInput?.value.trim() || ''
       let contact = contactInput?.value.trim() || ''
@@ -158,48 +98,80 @@ if (submitBtn) {
         primerColorValue = guessedColorValue
       }
 
-      submitEntry(name, guessedColorValue, contact, primerColorValue)
+      // Show loading state
+      submitBtn.disabled = true
+      submitBtn.textContent = 'Submitting...'
 
-      if (submittedInfo) {
-        submittedInfo.innerHTML = `
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Contact:</strong> ${contact}</p>
-        <p><strong>Your color:</strong> OKLCH(${guessedColorValue.l.toFixed(2)} ${guessedColorValue.c.toFixed(3)} ${guessedColorValue.h.toFixed(1)})</p>
-        <p style="margin-top: 12px; font-style: italic;">Returning to form in 3 seconds...</p>
-      `
+      let success = await submitEntry(
+        name,
+        guessedColorValue,
+        contact,
+        primerColorValue
+      )
+
+      // Reset button state
+      submitBtn.disabled = false
+      submitBtn.innerHTML = originalButtonHTML
+
+      if (!success) {
+        alert('There was an error submitting your entry. Please try again.')
+        return
       }
 
-      contestFormWrapper?.classList.add('is-hidden')
-      successDiv?.classList.add('is-visible')
-      submitBtn?.classList.add('is-hidden')
+      // Store values for potential edit
+      lastSubmittedName = name
+      lastSubmittedContact = contact
 
-      // Clear the form inputs
-      if (nameInput) nameInput.value = ''
-      if (contactInput) contactInput.value = ''
-
-      // After 3 seconds, hide success, show form, and set random color
-      setTimeout(() => {
-        // Generate new random color for next person
-        let newRandomColor = randomColor()
-        current.set(newRandomColor)
-        primerColor.set(newRandomColor)
-
-        contestFormWrapper?.classList.remove('is-hidden')
-        successDiv?.classList.remove('is-visible')
-        submitBtn?.classList.remove('is-hidden')
-      }, 3000)
+      // Show full-screen success modal with submitted color as background
+      if (successModal && successDetails) {
+        let colorCSS = buildForCSS(guessedColorValue.l, guessedColorValue.c, guessedColorValue.h, 1)
+        successModal.style.setProperty('--submitted-color', colorCSS)
+        successDetails.innerHTML = `
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Contact:</strong> ${contact}</p>
+        `
+        successModal.classList.add('is-visible')
+      }
     } catch (e) {
       console.error('Error submitting entry:', e)
+      submitBtn.disabled = false
+      submitBtn.innerHTML = originalButtonHTML
       alert('There was an error submitting your entry. Please try again.')
     }
   })
 }
 
-if (resetBtn) {
-  resetBtn.addEventListener('click', () => {
-    contestFormWrapper?.classList.remove('is-hidden')
-    successDiv?.classList.remove('is-visible')
-    submitBtn?.classList.remove('is-hidden')
+// Success modal button handlers
+let successEdit = document.querySelector<HTMLButtonElement>('#success-edit')
+
+if (successDismiss) {
+  successDismiss.addEventListener('click', () => {
+    // Clear form and generate new random color for next person
+    if (nameInput) nameInput.value = ''
+    if (contactInput) contactInput.value = ''
+    lastSubmittedName = ''
+    lastSubmittedContact = ''
+
+    // Clear the entry ID so next submission creates a new entry
+    clearCurrentEntry()
+
+    let newRandomColor = randomColor()
+    current.set(newRandomColor)
+    primerColor.set(newRandomColor)
+
+    // Hide the modal
+    successModal?.classList.remove('is-visible')
+  })
+}
+
+if (successEdit) {
+  successEdit.addEventListener('click', () => {
+    // Restore form values so they can edit and resubmit
+    if (nameInput) nameInput.value = lastSubmittedName
+    if (contactInput) contactInput.value = lastSubmittedContact
+
+    // Close modal - color is already preserved
+    successModal?.classList.remove('is-visible')
   })
 }
 

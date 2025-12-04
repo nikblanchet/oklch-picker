@@ -1,70 +1,53 @@
 body {
   --main-padding: 32px;
-
-  @media (width >= 1320px) {
-    --main-padding: 72px;
-  }
 }
 
 .main {
   position: relative;
   width: var(--card-width);
-  padding: 24px var(--main-padding) env(safe-area-inset-bottom, 0) var(--main-padding);
+  min-height: calc(var(--card-max-height) - var(--card-top-padding));
+  padding: var(--card-top-padding) var(--main-padding) 0 var(--main-padding);
   background: var(--surface-1);
   border-radius: 36px;
 
-  @media (width < 830px) {
-    box-sizing: border-box;
-    width: 100%;
-    padding-top: 0;
-    padding-bottom: calc(140px + env(safe-area-inset-bottom, 0));
-    border-radius: 36px 36px 0 0;
-    box-shadow:
-      0 0 2px var(--surface-2-shadow),
-      0 0 18px var(--surface-2-shadow);
-
-    @supports (backdrop-filter: blur(24px)) {
-      background: var(--surface-2);
-      backdrop-filter: blur(24px);
-    }
-  }
-}
-
-.main_expand {
-  @media (width >= 830px) {
+  @media (width < 600px) {
     display: none;
   }
 
-  @media (width < 830px) {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 32px;
-    user-select: none;
-    background: transparent;
-    border: none;
+  @media (width >= 600px) and (width < 830px) {
+    box-sizing: border-box;
+    min-height: 0;
+    padding-top: 16px;
+    padding-bottom: 16px;
   }
 }
 
-.main_expand::before {
-  @media (width < 830px) {
-    display: block;
-    width: 32px;
-    height: 4px;
-    content: "";
-    background: var(--surface-ui-regular);
-    border-radius: 2px;
-  }
+.main_title {
+  height: 40px;
+  margin: 0 0 12px;
+  font: inherit;
+  font-size: 1.375rem;
+  font-weight: bold;
+  line-height: 40px;
+}
+
+.main_expand {
+  display: none;
 }
 
 .main_row {
   margin-bottom: 24px;
 }
 
+.main_row:not(.main_row--sample) {
+  @media (width < 600px) {
+    display: none;
+  }
+}
+
 .main_row--sample {
-  :is(body.is-main-collapsed) & {
-    margin-bottom: calc(24px + env(safe-area-inset-bottom, 0));
+  @media (width < 600px) {
+    margin-bottom: 0;
   }
 }
 
@@ -165,7 +148,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-size: 14px;
+  font-size: 1.1rem;
   font-weight: 500;
   color: var(--text-color);
 }
@@ -173,7 +156,7 @@ body {
 .contest_input {
   padding: 10px 12px;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 1rem;
   color: var(--text-color);
   background: var(--field-back);
   border: 2px solid oklch(0.7 0 0 / 40%);
