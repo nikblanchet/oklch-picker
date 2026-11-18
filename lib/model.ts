@@ -1,240 +1,187 @@
 import Delaunator from 'delaunator'
 import {
+  BufferAttribute,
   BufferGeometry,
-  type Camera,
   ColorManagement,
   DoubleSide,
-  Float32BufferAttribute,
   LinearSRGBColorSpace,
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
-  Vector2,
   Vector3,
   WebGLRenderer
 } from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 
-import { current, type LchValue } from '../stores/current.ts'
-import { biggestRgb, type RgbMode } from '../stores/settings.ts'
-import { type AnyRgb, build, rgb, toTarget } from './colors.ts'
+import type { Lch } from './color.ts'
+import { AXIS_MAX } from './config.ts'
+import { gammaDecode, gammaEncode, linearToOklab, type Vec3 } from './gamut.ts'
 
 ColorManagement.enabled = false
 
-interface UpdateSlice {
-  (color: LchValue): void
+const STEPS = 100
+const FLOOR = -0.5
+
+/** Model space is a cube from -0.5 to 0.5: X is L, Y is C and Z is H. */
+function toPosition({ c, h, l }: Lch): Vec3 {
+  return [l - 0.5, c / (2 * AXIS_MAX.c) + FLOOR, h / AXIS_MAX.h - 0.5]
 }
 
-function onGamutEdge(r: number, g: number, b: number): boolean {
-  return r === 0 || g === 0 || b === 0 || r > 0.99 || g > 0.99 || b > 0.99
-}
-
-function getModelData(mode: RgbMode): [Vector3[], number[]] {
-  let coordinates: Vector3[] = []
-  let colors: number[] = []
-
-  for (let x = 0; x <= 1; x += 0.01) {
-    for (let y = 0; y <= 1; y += 0.01) {
-      for (let z = 0; z <= 1; z += 0.01) {
-        if (onGamutEdge(x, y, z)) {
-          let edgeRgb: AnyRgb = { b: z, g: y, mode, r: x }
-          let to = toTarget(edgeRgb)
-          if (to.h) {
-            colors.push(edgeRgb.r, edgeRgb.g, edgeRgb.b)
-            coordinates.push(
-              new Vector3(to.l / L_MAX_COLOR, to.c / (C_MAX * 2), to.h / 360)
-            )
-          }
-        }
+function* cubeSurface(): Generator<Vec3> {
+  for (let r = 0; r <= STEPS; r++) {
+    for (let g = 0; g <= STEPS; g++) {
+      const isOnFace = r % STEPS === 0 || g % STEPS === 0
+      for (let b = 0; b <= STEPS; b += isOnFace ? 1 : STEPS) {
+        yield [r / STEPS, g / STEPS, b / STEPS]
       }
     }
   }
-
-  let bounds = [
-    [0, 0, 0],
-    [0, 0, 1],
-    [1, 0, 0],
-    [1, 1, 0],
-    [1, 0, 1],
-    [1, 0, 1],
-    [1, 1, 1]
-  ]
-  for (let i of bounds) {
-    coordinates.push(new Vector3(...i))
-    colors.push(i[0], i[0], i[0])
-  }
-
-  return [coordinates, colors]
 }
 
-function generateMesh(scene: Scene, mode: RgbMode): UpdateSlice {
-  scene.clear()
-
-  let [coordinates, colors] = getModelData(mode)
-  let top = new BufferGeometry().setFromPoints(coordinates)
-  top.setAttribute('color', new Float32BufferAttribute(colors, 3))
-  top.center()
-  top.setIndex(
-    Array.from(Delaunator.from(coordinates.map(c => [c.x, c.z])).triangles)
-  )
-  top.computeVertexNormals()
-
-  let material = new MeshBasicMaterial({ side: DoubleSide, vertexColors: true })
-  let l = new Vector2(0, 1)
-  let c = new Vector2(0, 1)
-  let h = new Vector2(0, 1)
-  material.onBeforeCompile = shader => {
-    shader.uniforms.sliceL = { value: l }
-    shader.uniforms.sliceC = { value: c }
-    shader.uniforms.sliceH = { value: h }
-    shader.vertexShader = `
-      varying vec3 vPos;
-      ${shader.vertexShader}
-    `.replace(
-      `#include <begin_vertex>`,
-      `#include <begin_vertex>
-      vPos = transformed;
-      `
-    )
-    shader.fragmentShader = `
-      #define ss(a, b, c) smoothstep(a, b, c)
-      uniform vec2 sliceL, sliceC, sliceH;
-      varying vec3 vPos;
-      ${shader.fragmentShader}
-    `.replace(
-      `#include <dithering_fragment>`,
-      `#include <dithering_fragment>
-        vec3 col = vec3(0.5, 0.5, 0.5);
-        float width = 0.0025;
-        float l = ss(width, 0., abs(vPos.x + sliceL.y));
-        float c = ss(width, 0., abs(vPos.y + sliceC.y));
-        float h = ss(width, 0., abs(vPos.z - sliceH.y));
-        gl_FragColor.rgb = mix(gl_FragColor.rgb, col, l);
-        gl_FragColor.rgb = mix(gl_FragColor.rgb, col, c);
-        gl_FragColor.rgb = mix(gl_FragColor.rgb, col, h);
-      `
-    )
+/** The edge of the P3 gamut as a height map over lightness and hue. */
+function buildTop(): BufferGeometry {
+  const positions: number[] = []
+  const colors: number[] = []
+  for (const rgb of cubeSurface()) {
+    const [l, a, b] = linearToOklab('p3', rgb.map(gammaDecode) as Vec3)
+    const c = Math.hypot(a, b)
+    if (c < 1e-4) continue
+    const h = ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360
+    positions.push(...toPosition({ c, h, l }))
+    colors.push(...rgb)
   }
-
-  let topMesh = new Mesh(top, material)
-  topMesh.translateY(0.3)
-  scene.add(topMesh)
-
-  let bottom = new PlaneGeometry(1, 1, 1, 20)
-  let bottomColors = []
-  if ('array' in bottom.attributes.position) {
-    let bottomSteps = bottom.attributes.position.array.length / 6
-    for (let i = 0; i <= bottomSteps; i += 1) {
-      let lchL = (L_MAX_COLOR * i) / bottomSteps
-      let rgbL = rgb(build(lchL, 0, 0)).r
-      bottomColors.push(rgbL, rgbL, rgbL, rgbL, rgbL, rgbL)
+  for (const l of [0, 1]) {
+    for (const h of [0, AXIS_MAX.h]) {
+      positions.push(...toPosition({ c: 0, h, l }))
+      colors.push(l, l, l)
     }
   }
-  bottom.setAttribute('color', new Float32BufferAttribute(bottomColors, 3))
-  bottom.translate(0, 0, -0.2)
-  bottom.rotateZ(Math.PI * 0.5)
-  bottom.rotateX(-Math.PI * 0.5)
-  let bottomMesh = new Mesh(bottom, material)
-  scene.add(bottomMesh)
-
-  return color => {
-    l.set(0, -color.l + 0.5)
-    c.set(0, (0.5 * -color.c) / C_MAX + 0.5)
-    h.set(0, 0.0028 * color.h - (color.h > 350 ? 0.51 : 0.5))
-  }
+  const { triangles } = new Delaunator(positions.filter((_, i) => i % 3 !== 1))
+  return new BufferGeometry()
+    .setAttribute('position', toAttribute(positions))
+    .setAttribute('color', toAttribute(colors))
+    .setIndex(new BufferAttribute(triangles, 1))
 }
 
-function initScene(
-  canvas: HTMLCanvasElement,
-  fullControl: boolean
-): [Scene, Camera, WebGLRenderer, OrbitControls] {
-  let canvasWidth = canvas.clientWidth
-  let canvasHeight = canvas.clientHeight
-
-  let scene = new Scene()
-  let camera = new PerspectiveCamera(75, canvasWidth / canvasHeight, 0.1, 1000)
-  let renderer = new WebGLRenderer({ alpha: true, canvas })
-
-  renderer.outputColorSpace = LinearSRGBColorSpace
-  renderer.setPixelRatio(window.devicePixelRatio)
-  renderer.setSize(canvasWidth, canvasHeight)
-  camera.position.set(0.79, 0, 0.79)
-  camera.lookAt(new Vector3(0, 1, 0))
-
-  let controls = new OrbitControls(camera, renderer.domElement)
-  controls.enablePan = fullControl
-  controls.enableZoom = fullControl
-  if (fullControl) {
-    controls.minDistance = 0.9
-    controls.maxDistance = 3
-  }
-
-  return [scene, camera, renderer, controls]
+function buildBottom(): BufferGeometry {
+  const bottom = new PlaneGeometry(1, 1, 20, 1)
+    .rotateX(-Math.PI / 2)
+    .translate(0, FLOOR, 0)
+  const position = bottom.getAttribute('position')
+  const grays = Array.from({ length: position.count }, (_, i) => {
+    const gray = gammaEncode((position.getX(i) + 0.5) ** 3)
+    return [gray, gray, gray]
+  })
+  return bottom.setAttribute('color', toAttribute(grays.flat()))
 }
+
+function toAttribute(values: number[]): BufferAttribute {
+  return new BufferAttribute(new Float32Array(values), 3)
+}
+
+/** Draws gray lines where the model crosses the `slice` planes. */
+function createMaterial(slice: Vector3): MeshBasicMaterial {
+  const material = new MeshBasicMaterial({
+    side: DoubleSide,
+    vertexColors: true
+  })
+  material.onBeforeCompile = shader => {
+    shader.uniforms['slice'] = { value: slice }
+    shader.vertexShader = `varying vec3 vPos;\n${shader.vertexShader}`.replace(
+      '#include <begin_vertex>',
+      '#include <begin_vertex>\nvPos = transformed;'
+    )
+    shader.fragmentShader =
+      `uniform vec3 slice;\nvarying vec3 vPos;\n${shader.fragmentShader}`.replace(
+        '#include <dithering_fragment>',
+        `#include <dithering_fragment>
+        vec3 lines = 1.0 - smoothstep(0.0, 0.0025, abs(vPos - slice));
+        lines.y *= step(${FLOOR + 0.0001}, vPos.y);
+        float line = max(lines.x, max(lines.y, lines.z));
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.5), line);`
+      )
+  }
+  return material
+}
+
+// Shared by the small and the fullscreen models
+const geometries = [buildTop(), buildBottom()]
+const viewDirection = new Vector3(0.79, 0, 0.79)
 
 export interface Model {
-  camera: Camera
-  start(): void
-  started: boolean
-  stop(): void
+  highlight(color: Lch): void
+  /** Turn to the side from which the other model was last looked at. */
+  sync(): void
 }
 
-export function initCanvas(
+/** Renders on demand only, so an idle page does not drain the battery. */
+export function createModel(
   canvas: HTMLCanvasElement,
-  fullscreen: boolean = false
+  isFullControl: boolean
 ): Model {
-  let [scene, camera, renderer, controls] = initScene(canvas, fullscreen)
+  const renderer = new WebGLRenderer({ alpha: true, antialias: true, canvas })
+  // Vertex colors are already encoded, they must be passed through as is
+  renderer.outputColorSpace = LinearSRGBColorSpace
+  renderer.getContext().drawingBufferColorSpace = 'display-p3'
 
-  // Handle canvas resize (fixes Safari CSS timing issue where dimensions are 0 on init)
-  let resizeObserver = new ResizeObserver(() => {
-    let width = canvas.clientWidth
-    let height = canvas.clientHeight
-    if (width > 0 && height > 0) {
-      ;(camera as PerspectiveCamera).aspect = width / height
-      ;(camera as PerspectiveCamera).updateProjectionMatrix()
-      renderer.setSize(width, height)
-    }
+  const slice = new Vector3(2, 2, 2)
+  const material = createMaterial(slice)
+  const scene = new Scene()
+  for (const geometry of geometries) {
+    scene.add(new Mesh(geometry, material).translateY(0.3))
+  }
+
+  const camera = new PerspectiveCamera(75, 1, 0.1, 1000)
+  camera.position.copy(viewDirection)
+
+  const controls = new OrbitControls(camera, canvas)
+  controls.enablePan = controls.enableZoom = isFullControl
+  // The small model must not block scrolling
+  if (!isFullControl) canvas.style.touchAction = 'pan-y pinch-zoom'
+  controls.minDistance = 0.9
+  controls.maxDistance = 3
+
+  let frame = 0
+  function render(): void {
+    frame ||= requestAnimationFrame(() => {
+      frame = 0
+      renderer.render(scene, camera)
+    })
+  }
+
+  controls.addEventListener('change', render)
+  controls.addEventListener('end', () => {
+    viewDirection.copy(camera.position).sub(controls.target)
   })
-  resizeObserver.observe(canvas)
+  canvas.addEventListener('webglcontextrestored', () => {
+    renderer.getContext().drawingBufferColorSpace = 'display-p3'
+    render()
+  })
 
-  function animate(): void {
-    if (model.started) requestAnimationFrame(animate)
-    controls.update()
-    renderer.render(scene, camera)
-  }
+  new ResizeObserver(() => {
+    const { clientHeight: height, clientWidth: width } = canvas
+    if (width === 0 || height === 0) return
+    camera.aspect = width / height
+    camera.updateProjectionMatrix()
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
+    renderer.setSize(width, height, false)
+    render()
+  }).observe(canvas)
 
-  let updateSlices: UpdateSlice
-  let unbindMode: undefined | VoidFunction
-  let unbindCurrent: undefined | VoidFunction
-
-  let model = {
-    camera,
-    start(): void {
-      unbindMode = biggestRgb.subscribe(value => {
-        updateSlices = generateMesh(scene, value)
-        if (!fullscreen) updateSlices(current.get())
-      })
-
-      if (!fullscreen) {
-        unbindCurrent = current.subscribe(value => {
-          updateSlices(value)
-        })
-      }
-
-      model.started = true
-      animate()
+  return {
+    highlight(color) {
+      slice.set(...toPosition(color))
+      render()
     },
-    started: true,
-    stop(): void {
-      unbindCurrent?.()
-      unbindMode?.()
-      model.started = false
+    sync() {
+      camera.position
+        .copy(viewDirection)
+        .setLength(controls.getDistance())
+        .add(controls.target)
+      controls.update()
+      render()
     }
   }
-
-  model.start()
-
-  return model
 }

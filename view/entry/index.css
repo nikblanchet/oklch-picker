@@ -1,0 +1,32 @@
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 1rem;
+  line-height: normal;
+  background: transparent;
+  border: 2px solid oklch(0.7 0 0 / 40%);
+  border-radius: 6px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--surface-ui-accent);
+  }
+
+  &:user-invalid {
+    border-color: var(--danger);
+  }
+}

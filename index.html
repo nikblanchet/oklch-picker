@@ -1,16 +1,372 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <template data-type="pug" data-src="./view/base/meta.pug" />
-    <link rel="manifest" href="/manifest.json">
-    <link rel="stylesheet" href="./index.css">
-    <script type="module" src="./index.ts" defer></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Guess the %CONTEST_YEAR% Pantone Color of the Year</title>
+    <meta
+      name="description"
+      content="Pick a color and guess the %CONTEST_YEAR% Pantone Color of the Year"
+    />
+    <meta name="color-scheme" content="only light" />
+    <meta name="theme-color" content="#f2f1f4" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Color Guess" />
+    <meta
+      property="og:title"
+      content="Guess the %CONTEST_YEAR% Pantone Color of the Year"
+    />
+    <meta property="og:image" content="%SITE_ORIGIN%/og-oklch.png" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="./view/base/oklch.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-oklch.png" />
+    <link rel="manifest" href="/oklch.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      id="fonts"
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&family=Fira+Code:wght@400&display=swap"
+      media="print"
+      crossorigin
+    />
+    <link rel="stylesheet" href="./index.css" />
+    <script type="module" src="./index.ts"></script>
   </head>
 
-  <body class="is-loading">
-    <template data-type="pug" data-src="./view/layout/index.pug" />
-    <template data-type="pug" data-src="./view/fullmodel/index.pug" />
-    <template data-type="pug" data-src="./view/benchmark/index.pug" />
-    <template data-type="pug" data-src="./view/admin/index.pug" />
+  <body>
+    <main class="layout">
+      <header class="card is-header">
+        <h1 class="header_title">
+          Guess the %CONTEST_YEAR% Pantone Color of the Year
+        </h1>
+        <ol class="header_steps">
+          <li>Enter your name and contact info</li>
+          <li>
+            Use the Hue, Chroma, and Lightness sliders to set your color. Narrow
+            screens will need to scroll down to see all 3 sliders.
+          </li>
+          <li>
+            Use the buttons at the bottom to see previous years' colors and to
+            submit your guess.
+          </li>
+        </ol>
+      </header>
+
+      <section class="card is-entry">
+        <h2 class="card_title">My contact info</h2>
+        <!-- No autofill: it would suggest previous entrants on a shared device -->
+        <form id="entry" autocomplete="off">
+          <label class="label">
+            Your Name:
+            <input
+              id="entry-name"
+              class="input"
+              placeholder="Enter your name"
+              required
+              maxlength="%NAME_MAX_LENGTH%"
+              enterkeyhint="next"
+              autocorrect="off"
+              spellcheck="false"
+            />
+          </label>
+          <label class="label">
+            Contact Info (email or phone):
+            <input
+              id="entry-contact"
+              class="input"
+              placeholder="email@example.com or phone"
+              required
+              maxlength="%CONTACT_MAX_LENGTH%"
+              enterkeyhint="done"
+              autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
+            />
+          </label>
+        </form>
+        <button id="entry-restart" class="dialog_button" type="button" hidden>
+          Not you? Start over
+        </button>
+      </section>
+
+      <section class="card is-guess">
+        <h2 class="card_title">My color guess</h2>
+        <div class="sample is-srgb">
+          <div class="sample_reader" aria-live="polite"></div>
+          <div class="sample_normal"></div>
+          <div class="sample_compare">
+            <div class="sample_unavailable"></div>
+            <div class="sample_real"><div class="sample_note"></div></div>
+            <div class="sample_fallback">
+              <button
+                class="sample_note"
+                type="button"
+                title="Go to the fallback color"
+              >
+                fallback
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="code is-oklch">
+          <div class="field">
+            <kbd class="field_hotkey" aria-hidden="true">o</kbd>
+            <input
+              class="field_input"
+              aria-label="OKLCH CSS code"
+              aria-keyshortcuts="o"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+        </div>
+        <div class="code is-other">
+          <div class="field is-options">
+            <kbd class="field_hotkey" aria-hidden="true">r</kbd>
+            <input
+              class="field_input"
+              aria-keyshortcuts="r"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <div class="field_options">
+              <select
+                class="field_select"
+                aria-label="Change format"
+                autocomplete="off"
+              ></select>
+              <div class="field_button icon is-down"></div>
+            </div>
+          </div>
+          <div class="code_note is-paste">
+            Paste HEX/RGB/HSL to convert to OKLCH
+          </div>
+          <div class="code_note is-fallback" hidden>
+            Closest fallback (by chroma) in sRGB
+          </div>
+          <div class="code_note is-figma" hidden>
+            Use it in Figma with
+            <a
+              class="code_link"
+              href="https://help.figma.com/hc/en-us/articles/360039825114-Manage-color-profiles-in-design-files#h_01H6Q1C5DK2JMQ8QFQBKEQ6AM0"
+              target="_blank"
+              rel="noreferrer"
+              >P3 color profile</a
+            >
+          </div>
+        </div>
+      </section>
+
+      %AXIS_CARDS%
+
+      <section class="card is-3d model is-mini">
+        <h2 class="card_title">3D (just for fun)</h2>
+        <canvas class="model_canvas"></canvas>
+        <div class="model_status" role="status"></div>
+        <button
+          id="open-3d"
+          class="button icon is-expand model_button"
+          type="button"
+          title="Open 3D in fullscreen"
+        ></button>
+      </section>
+    </main>
+
+    <footer class="actions">
+      <h2 class="actions_title">Do you like your color?</h2>
+      <p id="entry-error" class="actions_error" role="alert"></p>
+      <a class="action" href="/reports/pantone-colors-of-the-year.html"
+        >See previous years' colors</a
+      >
+      <button id="entry-submit" class="action is-submit" form="entry">
+        Submit your guess for %CONTEST_YEAR%
+      </button>
+      <button id="login-open" class="action is-admin" type="button">
+        This button is for Spice
+      </button>
+    </footer>
+
+    <dialog class="model is-full" aria-labelledby="model-title">
+      <h2 id="model-title">OKLCH 3D model</h2>
+      <canvas class="model_canvas"></canvas>
+      <div class="model_status" role="status"></div>
+      <form method="dialog">
+        <button
+          class="button icon is-cross model_button"
+          title="Back to color picker"
+        ></button>
+      </form>
+      <p class="model_note">
+        Drag to rotate • Scroll to zoom • Right button to move
+      </p>
+    </dialog>
+
+    <dialog
+      id="success"
+      class="success"
+      aria-labelledby="success-title"
+      closedby="none"
+    >
+      <h2 id="success-title">Entry Submitted!</h2>
+      <p>Thank you for participating!</p>
+      <div class="success_details">
+        <p><strong>Name:</strong> <bdi class="is-name"></bdi></p>
+        <p><strong>Contact:</strong> <bdi class="is-contact"></bdi></p>
+      </div>
+      <form method="dialog">
+        <button class="success_button is-done" value="done">
+          Yay! I'm gonna win! I wonder what the prize is?
+        </button>
+        <button class="success_button is-edit" value="edit">
+          PANIC SPIRAL!! I've changed my mind! Plz let me change the color!!
+        </button>
+      </form>
+    </dialog>
+
+    <dialog id="login" class="dialog is-login" aria-labelledby="login-title">
+      <form class="dialog_body">
+        <h2 id="login-title">Admin Login</h2>
+        <input
+          id="login-email"
+          class="input"
+          type="email"
+          placeholder="Email"
+          aria-label="Email"
+          autocomplete="username"
+          required
+        />
+        <input
+          id="login-password"
+          class="input"
+          type="password"
+          placeholder="Password"
+          aria-label="Password"
+          autocomplete="current-password"
+          required
+        />
+        <input
+          id="login-key"
+          class="input"
+          type="password"
+          placeholder="Private key"
+          aria-label="Private key"
+          autocomplete="one-time-code"
+          required
+        />
+        <p class="dialog_error" role="alert"></p>
+        <div class="dialog_actions">
+          <button id="login-cancel" class="dialog_button" type="button">
+            Cancel
+          </button>
+          <button id="login-submit" class="dialog_button is-primary">
+            Login
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="admin" class="dialog is-admin" aria-labelledby="admin-title">
+      <div class="dialog_body">
+        <header class="admin_row">
+          <h2 id="admin-title">Contest Admin Panel</h2>
+          <select
+            id="admin-year"
+            class="dialog_button"
+            aria-label="Contest year"
+          ></select>
+        </header>
+        <p id="admin-mismatch" class="dialog_error" hidden>
+          This private key does not match the key which new entries are
+          encrypted to. Entries it cannot decrypt cannot win.
+        </p>
+        <p class="dialog_error" role="alert"></p>
+
+        <section class="admin_box admin_row">
+          <h3 id="admin-status"></h3>
+          <button
+            id="admin-toggle"
+            class="dialog_button"
+            type="button"
+          ></button>
+        </section>
+
+        <form id="admin-answer" class="admin_box" autocomplete="off">
+          <h3>Pantone’s Color</h3>
+          <div class="admin_answer">
+            <div class="swatch"></div>
+            <p></p>
+          </div>
+          <input
+            class="input"
+            aria-label="Pantone’s color as HEX or any CSS color"
+            placeholder="HEX or any CSS color"
+            required
+            spellcheck="false"
+          />
+          <div class="dialog_actions">
+            <button id="admin-clear-answer" class="dialog_button" type="button">
+              Clear
+            </button>
+            <button
+              id="admin-set-answer"
+              class="dialog_button is-primary"
+            ></button>
+          </div>
+        </form>
+
+        <section>
+          <header class="admin_row">
+            <h3>Entries (<span id="admin-count"></span>)</h3>
+            <button id="admin-refresh" class="dialog_button" type="button">
+              Refresh
+            </button>
+          </header>
+          <p id="admin-empty" class="admin_empty">No entries yet</p>
+          <ol id="admin-entries" class="admin_entries"></ol>
+        </section>
+
+        <form class="dialog_actions is-wide" method="dialog">
+          <button id="admin-export" class="dialog_button" type="button">
+            Export Entries (JSON)
+          </button>
+          <button
+            id="admin-delete"
+            class="dialog_button is-danger"
+            type="button"
+          >
+            Delete All Entries
+          </button>
+          <button class="dialog_button is-primary">Close and Log Out</button>
+        </form>
+      </div>
+    </dialog>
+
+    <template id="admin-entry">
+      <li class="entry">
+        <div class="swatch is-primer" title="Primer Color"></div>
+        <div class="swatch is-guess" title="Guessed Color"></div>
+        <div class="entry_details">
+          <h4 class="entry_title">
+            <bdi class="entry_name"></bdi>
+            <span class="entry_winner">🏆 WINNER</span>
+          </h4>
+          <p><strong>Primer:</strong> <span class="entry_primer"></span></p>
+          <p><strong>Guessed:</strong> <span class="entry_guess"></span></p>
+          <p>
+            <strong>Contact:</strong> <bdi class="entry_contact"></bdi>
+            <strong class="entry_copies"></strong>
+          </p>
+          <p><strong>Submitted:</strong> <span class="entry_date"></span></p>
+          <div class="admin_row">
+            <strong class="entry_delta"></strong>
+            <button class="dialog_button is-danger entry_delete" type="button">
+              Delete
+            </button>
+          </div>
+        </div>
+      </li>
+    </template>
   </body>
 </html>

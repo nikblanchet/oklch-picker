@@ -1,9 +1,22 @@
 {
-  "extends": "@logux/stylelint-config",
-  "ignoreFiles": ["dist/**/*"],
+  "ignoreFiles": ["dist/**/*", "playwright-report/**/*", "test-results/**/*"],
   "rules": {
-    "function-disallowed-list": ["rgb", "rgba", "hsl", "hsla"],
     "alpha-value-notation": "percentage",
-    "color-named": "never"
+    "at-rule-no-unknown": true,
+    "block-no-empty": true,
+    "color-named": "never",
+    "color-no-hex": true,
+    "declaration-block-no-duplicate-properties": true,
+    "declaration-block-no-shorthand-property-overrides": true,
+    "declaration-property-value-no-unknown": true,
+    "function-disallowed-list": ["rgb", "rgba", "hsl", "hsla"],
+    "media-feature-range-notation": "context",
+    "no-duplicate-selectors": true,
+    "property-no-deprecated": true,
+    "property-no-unknown": true,
+    "selector-pseudo-class-no-unknown": true,
+    "selector-pseudo-element-no-unknown": true,
+    "selector-type-no-unknown": true,
+    "unit-no-unknown": true
   }
 }
