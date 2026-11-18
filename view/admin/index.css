@@ -82,11 +82,16 @@
 }
 
 /* It has to look different from a name which contains the same words */
-.entry_winner {
+.entry_winner,
+.entry_late {
   padding: 2px 8px;
   color: var(--paper);
   white-space: nowrap;
   background: var(--ink);
+}
+
+.entry_late {
+  background: var(--danger);
 }
 
 .entry_delta {

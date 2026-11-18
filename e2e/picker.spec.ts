@@ -91,6 +91,14 @@ test('replaces colors which only screens can show', async ({ page }) => {
   await expect(page.getByLabel('hex code')).toHaveValue(await getHex(page))
 })
 
+test('ignores a retyped hex code', async ({ page }) => {
+  await page.goto('/#pick')
+  await setHex(page, await getHex(page))
+  await page.reload()
+  const draft = await page.evaluate(() => Object.values(localStorage).join())
+  expect(draft).toContain('"pick":{"h":270,"l":0.7,')
+})
+
 test('cycles through the looks @mobile', async ({ page }) => {
   await page.goto('/#pick')
   await lookNumber(page, 1)
@@ -214,7 +222,7 @@ test('loads little and from nowhere else', async ({ page }) => {
   await page.setViewportSize({ height: 664, width: 390 })
   await page.goto('/')
   await expect(page.locator('#runway [data-look]').first()).toBeVisible()
-  await page.waitForLoadState('networkidle')
+  await page.waitForTimeout(1000)
   expect(urls.filter(i => !i.startsWith('http://localhost'))).toEqual([])
   expect(urls.join()).not.toContain('admin-')
   expect(urls.filter(i => i.includes('-ink')).length).toBeLessThan(7)

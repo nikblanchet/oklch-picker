@@ -1,6 +1,6 @@
-/** The real migration on a real Postgres, set up the way Supabase does it. */
+/** The real migrations on a real Postgres, set up the way Supabase does it. */
 import { PGlite } from '@electric-sql/pglite'
-import { readFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 
 import { CONTEST_YEAR } from '../lib/config.ts'
 import { LEGACY } from './ciphertexts.ts'
@@ -8,10 +8,15 @@ import { LEGACY } from './ciphertexts.ts'
 export const ADMIN_ID = '00000000-0000-4000-8000-00000000000a'
 export const STRANGER_ID = '00000000-0000-4000-8000-00000000000b'
 
-export const MIGRATION = await readFile(
-  new URL('../supabase/migrations/20261113000000_contest.sql', import.meta.url),
-  'utf8'
+const FOLDER = new URL('../supabase/migrations/', import.meta.url)
+
+export const MIGRATIONS = await Promise.all(
+  (await readdir(FOLDER))
+    .toSorted()
+    .map(file => readFile(new URL(file, FOLDER), 'utf8'))
 )
+
+export const MIGRATION = MIGRATIONS.join('\n')
 
 const SUPABASE = `
   create role anon nologin;

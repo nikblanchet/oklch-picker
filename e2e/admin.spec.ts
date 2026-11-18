@@ -58,6 +58,39 @@ test('ranks entries @mobile', async ({ page }) => {
   await expect(page.locator('#admin-answer')).toContainText('Not set')
 })
 
+test.describe(() => {
+  test.use({ timezoneId: 'America/Los_Angeles' })
+
+  test('closes retroactively @mobile', async ({ backend, page }) => {
+    await backend.db.pg.exec(`
+      update contest.entries set guessed_at = '2026-01-01 16:59Z';
+      update contest.entries set guessed_at = '2026-01-01 17:01Z'
+        where guess_h < 100`)
+    await logIn(page)
+    await page.getByLabel('Pantone’s color').fill('#d98a7a')
+    page.once('dialog', dialog => dialog.accept())
+    await click(page, 'Set as Pantone')
+    const rows = page.locator('.entry')
+    await expect(rows.first()).toContainText('Alice')
+
+    const field = page.getByLabel('Closing time')
+    await field.fill('2026-01-01T09:00')
+    await click(page, 'Set closing time')
+    await expect(page.locator('#admin-count')).toHaveText('2, 1 late')
+    await expect(page.locator('#admin-status')).toContainText('9:00:00 AM')
+    await expect(field).toHaveValue('2026-01-01T09:00')
+    await expect(rows.first().getByText('WINNER')).toBeVisible()
+    await expect(rows.last()).toContainText('Alice')
+    await expect(rows.last().getByText('LATE')).toBeVisible()
+    await expect(rows.first().getByText('changed after closing')).toBeVisible()
+
+    await field.fill('2026-01-01T09:02')
+    await click(page, 'Set closing time')
+    await expect(rows.first()).toContainText('Alice')
+    await expect(page.getByText('LATE', { exact: true }).first()).toBeHidden()
+  })
+})
+
 test('forgets everything when closed', async ({ backend, page }) => {
   await logIn(page)
   await expect(page.locator('.entry')).toHaveCount(2)
@@ -171,7 +204,10 @@ test('reads 2026 entries', async ({ page }) => {
   await logIn(page)
   await page.getByLabel('Contest year').selectOption('2026')
   await expect(page.locator('.entry')).toHaveText([/zoe@example.com/])
-  await expect(page.locator('#admin-count')).toContainText('1 malformed')
+  await expect(page.locator('#admin-count')).toHaveText(
+    '1, 1 malformed skipped'
+  )
+  await expect(page.getByLabel('Closing time')).toBeHidden()
 })
 
 test('survives clicks while loading', async ({ context, page }) => {

@@ -327,6 +327,25 @@
           ></button>
         </section>
 
+        <form id="admin-deadline" class="admin_box" autocomplete="off">
+          <label class="label">
+            <span>
+              <strong>Closing time</strong> in the time zone of this device,
+              past or future. Colors chosen later cannot win.
+            </span>
+            <input
+              class="input"
+              type="datetime-local"
+              min="2000-01-01T00:00"
+              max="2999-12-31T23:59"
+              required
+            />
+          </label>
+          <div class="dialog_actions">
+            <button class="dialog_button">Set closing time</button>
+          </div>
+        </form>
+
         <form id="admin-answer" class="admin_box" autocomplete="off">
           <h3>Pantone’s Color</h3>
           <div class="admin_answer">
@@ -386,6 +405,7 @@
           <h4 class="entry_title">
             <bdi class="entry_name"></bdi>
             <span class="entry_winner">🏆 WINNER</span>
+            <span class="entry_late">LATE</span>
           </h4>
           <p><strong>Primer:</strong> <span class="entry_primer"></span></p>
           <p><strong>Guessed:</strong> <span class="entry_guess"></span></p>
@@ -395,6 +415,9 @@
           <p>
             <strong>Contact:</strong> <bdi class="entry_contact"></bdi>
             <strong class="entry_copies"></strong>
+          </p>
+          <p class="entry_edited">
+            <strong>⚠️ Details were changed after closing</strong>
           </p>
           <p><strong>Submitted:</strong> <span class="entry_date"></span></p>
           <div class="admin_row">

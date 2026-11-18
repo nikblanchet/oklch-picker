@@ -5,7 +5,7 @@ import { type PrivateKey, unseal } from './crypto.ts'
 import { decryptLegacy } from './legacy-crypto.ts'
 import { isLch, isPerson, isRecord } from './validate.ts'
 
-const LEGACY_YEAR = 2026
+export const LEGACY_YEAR = 2026
 
 export interface Contest {
   answer: Lch | undefined
@@ -17,6 +17,8 @@ export interface Contest {
 export interface Entry {
   createdAt: string
   guess: Lch
+  /** When the color was last changed. */
+  guessedAt: string
   id: string
   /** Missing when the key in use does not reveal anybody to contact. */
   person: Person | undefined
@@ -70,6 +72,7 @@ async function readEntry(row: Row, key: PrivateKey): Promise<Entry[]> {
     {
       createdAt: String(row['created_at']),
       guess,
+      guessedAt: String(row['guessed_at'] ?? row['updated_at']),
       id,
       person: await attempt(() =>
         unseal(key, sealContext(year, id), String(row['sealed']))
@@ -89,6 +92,7 @@ async function readLegacyEntry(row: Row): Promise<Entry[]> {
     {
       createdAt: String(row['created_at']),
       guess,
+      guessedAt: String(row['created_at']),
       id: String(row['id']),
       person: await attempt(async () => {
         const [name, contact] = await decryptLegacy(String(row['salt']), [

@@ -158,6 +158,8 @@ function apply(): void {
     error.textContent = 'Use six letters or digits, like #bb2648.'
     return
   }
+  // Retyping the same code must not count as a change
+  if (toHex(typed) === hex.peek()) return
   // Grays have no hue to move the slider to
   setPick(toPick(typed.c < 1e-4 ? { ...typed, h: pick.peek().h } : typed))
   error.textContent =

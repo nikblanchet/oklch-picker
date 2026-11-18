@@ -16,9 +16,9 @@ It started as a fork of the wonderful [OKLCH Color Picker] by [Evil Martians].
 3. Copy `.env.example` to `.env.local` and fill it in. Add the same three
    variables to the Vercel project, for Production and Preview. The build fails
    if any of them is missing.
-4. In the Supabase SQL editor, run
-   [the migration](./supabase/migrations/20261113000000_contest.sql). It also
-   takes the table of the 2026 site away from the public.
+4. In the Supabase SQL editor, run [the migrations](./supabase/migrations/) in
+   order. They also take the table of the 2026 site away from the public. Run
+   new ones before deploying the code which needs them.
 5. In Supabase, open Authentication:
    - Turn off “Allow new users to sign up”.
    - Delete the users of the 2026 site: their passwords and sessions may have
@@ -55,16 +55,10 @@ in. Prefer your own device over the one entrants use.
 - **At parties,** open `/?party`, or press “Hand this phone to someone else”.
   Until you press “Exit” on the first screen, the phone forgets every guest,
   but keeps your own entry. Use it on all shared devices.
-- **Close submissions** as soon as Pantone announces the color. Then delete
-  entries which were submitted or edited after the announcement: the panel
-  shows both times. A deadline can be scheduled as a safety net, and opening
-  submissions again removes it:
-
-  ```sql
-  update contest.contests set closes_at = '2026-12-04 00:00 America/New_York'
-  where year = 2027;
-  ```
-
+- **Close submissions** as soon as Pantone announces the color. Missed it? Set
+  the closing time to the moment of the announcement, in your own time zone: colors which were chosen
+  later are marked as late and cannot win. A time in the future schedules the
+  closing. Opening submissions again removes it.
 - **Set the color** as HEX or any CSS color. No entries are accepted while it
   is set. Entries are ranked by CIEDE2000 between sRGB colors; wider gamut
   guesses are mapped to sRGB first.
@@ -98,7 +92,7 @@ which is stored as the “primer” to see how it influences guesses.
   timestamps are not encrypted.
 - **IP addresses** are hashed for rate limiting. Whoever has database access
   could reverse them. They are purged after a day of activity, and whenever you
-  close submissions, set the color or delete all entries.
+  close submissions by hand, set the color or delete all entries.
 - **Editing** needs a random 256-bit token. The database only has its hash,
   the token stays in the entrant’s browser along with their details.
 - **Admin sessions,** the private key and decrypted entries only exist in
@@ -118,6 +112,8 @@ Known limits:
   `X-Forwarded-For`, can be forged.
 - Only accepted requests count towards the rate limits, since Postgres rolls
   the counter back together with a rejected one.
+- Until submissions are closed for real, an entry which is on time can be
+  handed to somebody else. The panel flags details changed after closing.
 - Safari may clear the storage of sites which were not visited for a week.
   Such entrants can only enter again, which the panel flags.
 - Guests can leave party mode and see the entry of the phone’s owner.
@@ -135,7 +131,7 @@ Known limits:
 | `pnpm format` | Prettier                                         |
 
 Browser tests need `pnpm exec playwright install` once. They run the production
-build in Chromium, WebKit and Firefox, against the real migration on an
+build in Chromium, WebKit and Firefox, against the real migrations on an
 in-memory Postgres. Set `CHROMIUM_PATH` to use an installed Chromium.
 
 - `lib/` has logic without state, `stores/` has signals, `view/` connects them

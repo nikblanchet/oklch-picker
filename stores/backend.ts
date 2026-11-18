@@ -8,6 +8,10 @@ export const supabase = createSupabase(
 export const publicKey = import.meta.env.VITE_CONTEST_PUBLIC_KEY
 
 const MESSAGES = new Map([
+  [
+    'answer_is_set',
+    'The color is set, so the closing time has to be in the past.'
+  ],
   ['contest_closed', 'Sorry, the contest is closed.'],
   ['contest_full', 'Sorry, the contest is full.'],
   ['invalid_key', 'This is not a valid private key.'],

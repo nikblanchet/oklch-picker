@@ -5,9 +5,9 @@ import { parseColor } from '../lib/parse.ts'
 import { deltaE, rank } from '../lib/score.ts'
 
 function entry(name: string, code: string, day = 1) {
-  const updatedAt = `2026-11-0${day}T00:00:00Z`
+  const guessedAt = `2026-11-0${day}T00:00:00Z`
   const person = name === 'junk' ? undefined : {}
-  return { guess: parseColor(code)!, name, person, updatedAt }
+  return { guess: parseColor(code)!, name, person, guessedAt }
 }
 
 const ANSWER = parseColor('#f0efeb')!
@@ -56,7 +56,40 @@ test('keeps the order until there is an answer', () => {
   const entries = [entry('b', 'red'), entry('a', 'blue')]
   deepStrictEqual(
     rank(entries, undefined),
-    entries.map(i => ({ deltaE: undefined, entry: i, isWinner: false }))
+    entries.map(i => ({
+      deltaE: undefined,
+      entry: i,
+      isLate: false,
+      isWinner: false
+    }))
   )
   deepStrictEqual(rank([], ANSWER), [])
+})
+
+test('puts late guesses last', () => {
+  const entries = [
+    entry('cheat', '#f0efeb', 3),
+    entry('tie', '#eee', 3),
+    entry('just', '#eee', 2),
+    entry('far', 'red')
+  ]
+  const deadline = '2026-11-02T01:00:00+01:00'
+  deepStrictEqual(
+    rank(entries, ANSWER, deadline).map(i => [
+      i.entry.name,
+      i.isLate,
+      i.isWinner
+    ]),
+    [
+      ['just', false, true],
+      ['far', false, false],
+      ['cheat', true, false],
+      ['tie', true, false]
+    ]
+  )
+  deepStrictEqual(
+    rank(entries, undefined, deadline).map(i => i.isLate),
+    [true, true, false, false]
+  )
+  ok(rank(entries, ANSWER, '2020-01-01').every(i => !i.isWinner))
 })
