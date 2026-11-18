@@ -1,144 +1,121 @@
-import { formatLch, isHexNotation, parseAnything } from '../../lib/colors.ts'
-import { toggleVisibility } from '../../lib/dom.ts'
-import { current, setCurrent, valueToColor } from '../../stores/current.ts'
 import {
-  formats,
-  type FormatsValue,
-  isOutputFormat,
-  srgbFormats
-} from '../../stores/formats.ts'
-import { outputFormat, type OutputFormats } from '../../stores/settings.ts'
-import { visible } from '../../stores/visible.ts'
-import { setInvalid, setValid, toggleWarning } from '../field/index.ts'
+  computed,
+  effect,
+  type ReadonlySignal,
+  signal
+} from '@preact/signals-core'
 
-let lch = document.querySelector<HTMLDivElement>('.code.is-lch')!
-let lchInput = lch.querySelector<HTMLInputElement>('input')!
+import { formatOklch, type Hint, isHex, parseColor } from '../../lib/color.ts'
+import { $ } from '../../lib/dom.ts'
+import {
+  type Format,
+  FORMATS,
+  isFormat,
+  SRGB_FORMATS
+} from '../../lib/formats.ts'
+import { current, setColor } from '../../stores/current.ts'
+import { gamut } from '../../stores/visible.ts'
+import { setError } from '../field/index.ts'
 
-let rgb = document.querySelector<HTMLDivElement>('.code.is-rgb')!
-let rgbInput = rgb.querySelector<HTMLInputElement>('input')!
-
-let notePaste = document.querySelector<HTMLDivElement>('.code_note.is-paste')!
-let noteFigma = document.querySelector<HTMLDivElement>('.code_note.is-figma')!
-let noteFallback = document.querySelector<HTMLDivElement>(
-  '.code_note.is-fallback'
-)!
-
-let format = document.querySelector<HTMLSelectElement>('.code select')!
-
-let prevValues = new Map<HTMLInputElement, string>()
-let locked = new Map<HTMLInputElement, boolean>()
-
-function setLch(): void {
-  let value = current.get()
-  let text = formatLch(valueToColor(value))
-  prevValues.set(lchInput, text)
-  lchInput.value = text
-  setValid(lchInput)
+const PREFIXES: Partial<Record<Format, string>> = {
+  figmaP3: 'Figma P3 ',
+  lrgb: 'Linear RGB '
+}
+const SPACE_FORMATS: Partial<Record<string, Format>> = {
+  'srgb': 'rgb',
+  'srgb-linear': 'lrgb'
 }
 
-function setRgb(): void {
-  let { space } = visible.get()
-  let type = outputFormat.get()
-  let output = formats.get()[type]
-  prevValues.set(rgbInput, output)
-  rgbInput.value = output.replace(/^(Figma P3|Linear RGB) /, '')
-  if (type === 'figmaP3') {
-    toggleWarning(rgbInput, true)
-    toggleVisibility(noteFigma, true)
-    toggleVisibility(notePaste, false)
-    toggleVisibility(noteFallback, false)
-  } else {
-    toggleWarning(rgbInput, false)
-    toggleVisibility(noteFigma, false)
-    let isFallback = space !== 'srgb' && srgbFormats.has(type)
-    toggleVisibility(notePaste, !isFallback)
-    toggleVisibility(noteFallback, isFallback)
-  }
-  setValid(rgbInput)
-}
+const HINTS: Partial<Record<Format, Hint>> = { figmaP3: 'p3', numbers: 'oklch' }
 
-current.subscribe(() => {
-  if (!locked.get(lchInput)) {
-    setLch()
-  }
-})
+const format = signal<Format>('hex')
 
-visible.subscribe(() => {
-  if (!locked.get(rgbInput)) {
-    setRgb()
-  }
-})
+const select = $<HTMLSelectElement>('.field_select')
+const otherInput = $<HTMLInputElement>('.code.is-other input')
 
-function listenChanges(input: HTMLInputElement): void {
-  function processChange(): void {
-    let newValue = input.value.trim()
+/** Two-way binding which never rewrites the text while it is being typed. */
+function bind(
+  input: HTMLInputElement,
+  text: ReadonlySignal<string>,
+  hint: () => Hint | undefined,
+  onCommit?: (code: string) => void
+): void {
+  let isEdited = false
+  let isApplying = false
 
-    if (newValue === prevValues.get(input)) return
-    prevValues.set(input, newValue)
-
-    if (!setCurrent(newValue, input === rgbInput)) {
-      setInvalid(input, 'Use valid CSS color format')
-    }
+  function show(): void {
+    input.value = text.peek()
+    setError(input, '')
   }
 
-  input.addEventListener('change', processChange)
-  input.addEventListener('keyup', e => {
-    if (e.key === 'Enter') {
-      input.blur()
-    } else {
-      processChange()
-    }
+  text.subscribe(() => {
+    if (isApplying) return
+    isEdited = false
+    show()
   })
-  input.addEventListener('focus', () => {
-    locked.set(input, true)
+
+  input.addEventListener('input', () => {
+    isEdited = true
+    const parsed = parseColor(input.value, hint())
+    setError(input, parsed ? '' : 'Use valid CSS color format')
+    isApplying = true
+    if (parsed) setColor(parsed.color)
+    isApplying = false
+  })
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') input.blur()
   })
   input.addEventListener('blur', () => {
-    locked.set(input, false)
-    if (input === lchInput) {
-      setLch()
-    } else {
-      if (outputFormat.get() !== 'figmaP3') {
-        let value = input.value.trim()
-        if (isHexNotation(value)) {
-          outputFormat.set('hex/rgba')
-        } else {
-          let parsed = parseAnything(value)
-          if (parsed && isOutputFormat(parsed.mode)) {
-            outputFormat.set(parsed.mode)
-          }
-        }
-      }
-      setRgb()
-    }
+    if (isEdited) onCommit?.(input.value)
+    isEdited = false
+    show()
   })
 }
 
-listenChanges(lchInput)
-listenChanges(rgbInput)
+bind(
+  $<HTMLInputElement>('.code.is-oklch input'),
+  computed(() => formatOklch(current.value)),
+  () => 'oklch'
+)
 
-outputFormat.subscribe(value => {
-  format.value = value
-  if (value === 'numbers') {
-    rgbInput.ariaLabel = `OKLCH ${value}`
-  } else if (value === 'lrgb') {
-    rgbInput.ariaLabel = `Linear RGB`
-  } else {
-    rgbInput.ariaLabel = `${value} CSS code`
+bind(
+  otherInput,
+  computed(() => FORMATS[format.value](current.value)),
+  () => HINTS[format.peek()],
+  // Keep showing the notation which was typed in
+  code => {
+    if (format.peek() === 'figmaP3') return
+    const space = code.includes('(') && parseColor(code)?.space
+    const typed = isHex(code.trim())
+      ? 'hex'
+      : space && (SPACE_FORMATS[space] ?? space)
+    if (isFormat(typed)) format.value = typed
+  }
+)
+
+const options = Object.keys(FORMATS)
+  .filter(isFormat)
+  .map(type => [type, new Option('', type)] as const)
+select.append(...options.map(([, option]) => option))
+
+effect(() => {
+  for (const [type, option] of options) {
+    option.text = (PREFIXES[type] ?? '') + FORMATS[type](current.value)
   }
 })
-outputFormat.listen(() => {
-  setRgb()
-})
-format.addEventListener('change', () => {
-  outputFormat.set(format.value as OutputFormats)
+
+select.addEventListener('change', () => {
+  if (isFormat(select.value)) format.value = select.value
 })
 
-formats.subscribe(value => {
-  for (let key in value) {
-    let type = key as keyof FormatsValue
-    if (type !== 'hex/rgba') {
-      let option = format.querySelector<HTMLOptionElement>(`[value=${type}]`)!
-      option.text = value[type]
-    }
-  }
+effect(() => {
+  const type = format.value
+  const isFigma = type === 'figmaP3'
+  const isFallback = gamut.value !== 'srgb' && SRGB_FORMATS.has(type)
+  select.value = type
+  otherInput.setAttribute('aria-label', `${PREFIXES[type] ?? `${type} `}code`)
+  otherInput.classList.toggle('is-warning', isFigma)
+  $('.code_note.is-figma').hidden = !isFigma
+  $('.code_note.is-fallback').hidden = !isFallback
+  $('.code_note.is-paste').hidden = isFigma || isFallback
 })

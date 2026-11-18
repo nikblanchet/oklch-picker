@@ -1,26 +1,20 @@
-body {
-  --range-color: var(--surface-1);
-}
-
 .range {
+  --range-thumb: var(--current-color);
+  --range-thumb-shadow:
+    0 1px 6px oklch(0.2 0.03 310 / 12%), 0 0 1px 0.5px oklch(0.2 0.03 310 / 12%);
+
   position: relative;
-  box-sizing: border-box;
   height: 40px;
   border: var(--unavailable-border);
   border-radius: var(--radius);
 
-  &.is-a {
-    background: var(--opacity-pattern);
-    border: none;
+  &.is-invisible {
+    --range-thumb: var(--surface-1);
+    --range-thumb-shadow:
+      inset 0 0 3px oklch(0.2 0.03 310 / 12%),
+      0 1px 6px oklch(0.2 0.03 310 / 12%),
+      0 0 1px 0.5px oklch(0.2 0.03 310 / 12%);
   }
-}
-
-.range.is-a::before {
-  position: absolute;
-  inset: 0;
-  content: "";
-  background: linear-gradient(to right, var(--range-a-from), var(--range-a-to));
-  border-radius: var(--radius);
 }
 
 .range_space {
@@ -30,56 +24,45 @@ body {
   width: calc(100% + 2px);
   height: calc(100% + 2px);
   border-radius: var(--radius);
-}
 
-@define-mixin range-thumb {
-  box-sizing: border-box;
-  width: 27px;
-  height: 27px;
-  appearance: none;
-  cursor: grab;
-  background:
-    linear-gradient(var(--range-color), var(--range-color)),
-    repeating-conic-gradient(
-      from 45deg,
-      var(--chess) 0% 25%,
-      var(--surface-1) 0% 50%
-    )
-    50% / 5.5px 5.5px;
-  border: 4px solid oklch(1 0 0);
-  border-radius: 1px;
-  border-radius: 0;
-  box-shadow:
-    0 1px 6px 0 oklch(0.2 0.03 310 / 12%),
-    0 0 1px 0.5px oklch(0.2 0.03 310 / 12%);
-  transform: rotate(45deg) translate(14px, 14px);
-
-  .range.is-invisible & {
-    background: var(--current-surface);
-    box-shadow:
-      inset 0 0 3px 0 oklch(0.2 0.03 310 / 12%),
-      0 1px 6px 0 oklch(0.2 0.03 310 / 12%),
-      0 0 1px 0.5px oklch(0.2 0.03 310 / 12%);
-  }
+  /* Two rows of pixels are stretched over the whole height */
+  image-rendering: pixelated;
 }
 
 .range_input {
   position: absolute;
   top: -1px;
   left: -13px;
-  z-index: 2;
   width: calc(100% + 26px);
   height: calc(100% + 2px);
   appearance: none;
   cursor: pointer;
   background: transparent;
-  border-radius: var(--radius);
 }
 
+/* Browsers drop the whole rule if these selectors are listed together */
+
 .range_input::-moz-range-thumb {
-  @mixin range-thumb;
+  box-sizing: border-box;
+  width: 27px;
+  height: 27px;
+  appearance: none;
+  cursor: grab;
+  background: var(--range-thumb);
+  border: 4px solid var(--surface-1);
+  border-radius: 0;
+  box-shadow: var(--range-thumb-shadow);
+  transform: rotate(45deg) translate(14px, 14px);
 }
 
 .range_input::-webkit-slider-thumb {
-  @mixin range-thumb;
+  width: 27px;
+  height: 27px;
+  appearance: none;
+  cursor: grab;
+  background: var(--range-thumb);
+  border: 4px solid var(--surface-1);
+  border-radius: 0;
+  box-shadow: var(--range-thumb-shadow);
+  transform: rotate(45deg) translate(14px, 14px);
 }

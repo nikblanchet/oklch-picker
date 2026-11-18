@@ -1,0 +1,92 @@
+.dialog {
+  width: min(400px, 100% - 24px);
+  max-height: 90dvh;
+  margin: auto;
+  overscroll-behavior: contain;
+  background: oklch(0.98 0 0);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px oklch(0 0 0 / 50%);
+
+  &::backdrop {
+    background: oklch(0 0 0 / 80%);
+    backdrop-filter: blur(8px);
+  }
+
+  & h2 {
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  & h3 {
+    font-size: 18px;
+    font-weight: 600;
+  }
+}
+
+.dialog_body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding: 24px;
+
+  &[inert] {
+    opacity: 60%;
+  }
+}
+
+.dialog_error {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--danger);
+
+  &:empty {
+    position: absolute;
+  }
+}
+
+.dialog_actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+
+  &.is-wide > * {
+    flex: 1 150px;
+  }
+}
+
+.dialog_button {
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--surface-ui-regular);
+  border: none;
+  border-radius: 6px;
+
+  &:hover {
+    background: var(--surface-ui-accent);
+  }
+
+  &.is-primary {
+    color: var(--text-inverted);
+    background: var(--surface-primary);
+
+    &:hover {
+      filter: brightness(1.1);
+    }
+  }
+
+  &.is-danger {
+    color: var(--danger);
+    background: var(--surface-ui-danger);
+  }
+
+  /* iOS zooms in on fields with smaller text */
+  &:is(select) {
+    font-size: 1rem;
+  }
+
+  &:disabled {
+    opacity: 60%;
+  }
+}

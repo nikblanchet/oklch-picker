@@ -1,175 +1,118 @@
-import { getCleanCtx, initCanvasSize } from '../../lib/canvas.ts'
-import { parse, rgb } from '../../lib/colors.ts'
-import { getBorders } from '../../lib/dom.ts'
-import { prepareWorkers } from '../../lib/workers.ts'
-import { reportFreeze, reportPaint } from '../../stores/benchmark.ts'
-import { onPaint, setCurrentComponents } from '../../stores/current.ts'
-import { showCharts, showP3, showRec2020 } from '../../stores/settings.ts'
-import type { PaintData, PaintedData } from './worker.ts'
-import PaintWorker from './worker.ts?worker'
+import { effect } from '@preact/signals-core'
 
-let chartL = document.querySelector<HTMLDivElement>('.chart.is-l')!
-let chartC = document.querySelector<HTMLDivElement>('.chart.is-c')!
-let chartH = document.querySelector<HTMLDivElement>('.chart.is-h')!
-let canvasL = chartL.querySelector<HTMLCanvasElement>('.chart_canvas')!
-let canvasC = chartC.querySelector<HTMLCanvasElement>('.chart_canvas')!
-let canvasH = chartH.querySelector<HTMLCanvasElement>('.chart_canvas')!
+import { createSurface, type Surface } from '../../lib/canvas.ts'
+import { clamp } from '../../lib/color.ts'
+import { type Axis, AXIS_MAX } from '../../lib/config.ts'
+import { $, setCssVar } from '../../lib/dom.ts'
+import { type ChartTask, paintChart } from '../../lib/paint.ts'
+import { axes, current, setAxes, setColor } from '../../stores/current.ts'
 
-function getMaxC(): number {
-  return showRec2020.get() ? C_MAX_REC2020 : C_MAX
-}
+/** Fingers wobble, so a touch is a drag only after moving sideways a bit. */
+const TOUCH_SLOP_PX = 16
 
-function clamp(val: number, min: number, max: number): number {
-  return Math.min(Math.max(min, val), max)
-}
-
-onPaint({
-  c(c) {
-    document.body.style.setProperty('--chart-c', `${(100 * c) / getMaxC()}%`)
-  },
-  h(h) {
-    document.body.style.setProperty('--chart-h', `${(100 * h) / H_MAX}%`)
-  },
-  l(l) {
-    document.body.style.setProperty('--chart-l', `${(100 * l) / L_MAX}%`)
-  }
-})
-
-function setComponentsFromSpace(
-  space: HTMLCanvasElement,
-  mouseX: number,
-  mouseY: number
-): void {
-  let rect = space.getBoundingClientRect()
-  let x = clamp(mouseX - rect.left, 0, rect.width)
-  let y = clamp(rect.height - (mouseY - rect.top), 0, rect.height)
-  if (space.parentElement!.classList.contains('is-l')) {
-    setCurrentComponents({
-      c: (getMaxC() * y) / rect.height,
-      h: (H_MAX * x) / rect.width
+function createWorker(): undefined | Worker {
+  try {
+    return new Worker(new URL('./worker.ts', import.meta.url), {
+      type: 'module'
     })
-  } else if (space.parentElement!.classList.contains('is-c')) {
-    setCurrentComponents({
-      h: (H_MAX * x) / rect.width,
-      l: (L_MAX * y) / rect.height
-    })
-  } else if (space.parentElement!.classList.contains('is-h')) {
-    setCurrentComponents({
-      c: (getMaxC() * y) / rect.height,
-      l: (L_MAX * x) / rect.width
-    })
+  } catch {
+    return undefined
   }
 }
 
-function initEvents(chart: HTMLCanvasElement): void {
-  function onSelect(e: MouseEvent): void {
-    e.preventDefault()
-    setComponentsFromSpace(chart, e.clientX, e.clientY)
+/** Paints in a worker, skipping tasks which became stale while it was busy. */
+function createPainter(surface: Surface): (task: ChartTask) => void {
+  let worker = createWorker()
+  let running: ChartTask | undefined
+  let queued: ChartTask | undefined
+
+  function paint(task: ChartTask): void {
+    if (!worker) {
+      surface.draw(paintChart(task), task.width)
+    } else if (running) {
+      queued = task
+    } else {
+      running = task
+      worker.postMessage(task)
+    }
   }
 
-  function onMouseUp(e: MouseEvent): void {
-    document.removeEventListener('mousemove', onSelect)
-    document.removeEventListener('mouseup', onMouseUp)
-    setComponentsFromSpace(chart, e.clientX, e.clientY)
+  function next(): void {
+    const task = queued
+    running = queued = undefined
+    if (task) paint(task)
   }
 
-  chart.addEventListener('mousedown', () => {
-    document.addEventListener('mouseup', onMouseUp)
-    document.addEventListener('mousemove', onSelect)
-  })
-}
-
-initEvents(canvasL)
-initEvents(canvasC)
-initEvents(canvasH)
-
-let startWork = prepareWorkers<PaintData, PaintedData>(PaintWorker)
-
-function startWorkForComponent(
-  canvas: HTMLCanvasElement,
-  type: 'c' | 'h' | 'l',
-  value: number,
-  chartsToChange: number
-): void {
-  let [cssP3, cssRec2020] = getBorders()
-  let borderP3 = rgb(parse(cssP3)!)
-  let borderRec2020 = rgb(parse(cssRec2020)!)
-
-  let parts: [ImageData, number][] = []
-  startWork(
-    type,
-    chartsToChange,
-    messages =>
-      messages.map((_, i) => {
-        let step = Math.floor(canvas.width / messages.length)
-        let from = step * i + (i === 0 ? 0 : 1)
-        let to = Math.min(step * (i + 1), canvas.width)
-        if (i === messages.length - 1) to = canvas.width
-        return {
-          borderP3,
-          borderRec2020,
-          from,
-          height: canvas.height,
-          showP3: showP3.get(),
-          showRec2020: showRec2020.get(),
-          to,
-          type,
-          value,
-          width: canvas.width
-        }
-      }),
-    result => {
-      reportFreeze(() => {
-        parts.push([
-          new ImageData(
-            new Uint8ClampedArray(result.pixels),
-            result.width,
-            canvas.height
-          ),
-          result.from
-        ])
-      })
-      reportPaint(result.time)
-    },
-    () => {
-      reportFreeze(() => {
-        let ctx = getCleanCtx(canvas)
-        for (let [image, from] of parts) {
-          ctx.putImageData(image, from, 0)
-        }
-      })
+  worker?.addEventListener(
+    'message',
+    ({ data }: MessageEvent<Uint8ClampedArray<ArrayBuffer>>) => {
+      const done = running
+      next()
+      if (done) surface.draw(data, done.width)
     }
   )
+  worker?.addEventListener('error', () => {
+    worker?.terminate()
+    worker = undefined
+    queued ??= running
+    next()
+  })
+
+  return paint
 }
 
-function initCharts(): void {
-  initCanvasSize(canvasL)
-  initCanvasSize(canvasC)
-  initCanvasSize(canvasH)
+function initChart(fixed: Axis, x: ChartTask['x'], y: ChartTask['y']): void {
+  const chart = $(`.chart.is-${fixed}`)
+  const canvas = $<HTMLCanvasElement>('canvas', chart)
+  const surface = createSurface(canvas)
+  const paint = createPainter(surface)
 
-  onPaint({
-    c(c, chartsToChange) {
-      if (!showCharts.get()) return
-      startWorkForComponent(canvasC, 'c', c, chartsToChange)
-    },
-    h(h, chartsToChange) {
-      if (!showCharts.get()) return
-      startWorkForComponent(canvasH, 'h', h, chartsToChange)
-    },
-    l(l, chartsToChange) {
-      if (!showCharts.get()) return
-      startWorkForComponent(canvasL, 'l', l, chartsToChange)
+  effect(() => {
+    const { height, width } = surface.size.value
+    const { value } = axes[fixed]
+    if (width > 0 && height > 0) {
+      paint({ height, space: surface.space, value, width, x, y })
     }
+  })
+
+  effect(() => {
+    const percent = (axis: Axis) =>
+      `${clamp(0, (100 * axes[axis].value) / AXIS_MAX[axis], 100)}%`
+    setCssVar('--chart-x', percent(x), chart)
+    setCssVar('--chart-y', percent(y), chart)
+  })
+
+  function pick({ clientX, clientY }: MouseEvent): void {
+    const { bottom, height, left, width } = canvas.getBoundingClientRect()
+    setAxes({
+      [x]: AXIS_MAX[x] * clamp(0, (clientX - left) / width, 1),
+      [y]: AXIS_MAX[y] * clamp(0, (bottom - clientY) / height, 1)
+    })
+  }
+
+  let before = current.peek()
+  let startX = 0
+  let isDragging = false
+  canvas.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || !e.isPrimary) return
+    before = current.peek()
+    startX = e.clientX
+    isDragging = e.pointerType !== 'touch'
+    canvas.setPointerCapture(e.pointerId)
+  })
+  canvas.addEventListener('pointermove', e => {
+    if (!e.isPrimary || !canvas.hasPointerCapture(e.pointerId)) return
+    isDragging ||= Math.abs(e.clientX - startX) > TOUCH_SLOP_PX
+    if (isDragging) pick(e)
+  })
+  // Unlike `pointerup`, it does not fire for taps which stop a scroll
+  canvas.addEventListener('click', pick)
+  // The touch turned out to be a scroll or a zoom
+  canvas.addEventListener('pointercancel', e => {
+    if (e.isPrimary) setColor(before)
   })
 }
 
-if (showCharts.get()) {
-  initCharts()
-} else {
-  let unbindCharts = showCharts.listen(show => {
-    if (show) {
-      unbindCharts()
-      initCharts()
-    }
-  })
-}
+initChart('h', 'l', 'c')
+initChart('l', 'h', 'c')
+initChart('c', 'h', 'l')

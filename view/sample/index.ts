@@ -1,36 +1,37 @@
-import { lch, oklch } from '../../lib/colors.ts'
-import { colorToValue, current } from '../../stores/current.ts'
-import { visible } from '../../stores/visible.ts'
+import { effect } from '@preact/signals-core'
 
-let sample = document.querySelector<HTMLDivElement>('.sample')!
-let type = document.querySelector<HTMLDivElement>('.sample_reader')!
-let unavailable = document.querySelector<HTMLDivElement>('.sample_unavailable')!
-let fallbackNote = document.querySelector<HTMLButtonElement>(
-  '.sample_fallback .sample_note'
-)!
+import { formatHex, parseColor, toSrgb } from '../../lib/color.ts'
+import { $, setCssVar, setText } from '../../lib/dom.ts'
+import { current, setColor } from '../../stores/current.ts'
+import {
+  fallbackCss,
+  gamut,
+  isDisplayable,
+  realCss
+} from '../../stores/visible.ts'
 
-visible.subscribe(({ fallback, real, space }) => {
-  sample.classList.toggle('is-srgb', space === 'srgb')
-  sample.classList.toggle('is-supported', !!real)
+const NAMES = { out: '', p3: 'P3', rec2020: 'Rec2020', srgb: 'sRGB' }
 
-  if (real) {
-    unavailable.innerText = ''
-  } else if (space === 'p3') {
-    unavailable.innerText = 'P3 is unavailable on this monitor'
-  } else if (space === 'rec2020') {
-    unavailable.innerText = 'Rec2020 is unavailable on this monitor'
-  } else if (space === 'out') {
-    unavailable.innerText = 'Unavailable on any device'
-  }
+const sample = $('.sample')
 
-  type.innerText = `${space} space`
-
-  sample.style.setProperty('--sample-real', real || 'transparent')
-  sample.style.setProperty('--sample-fallback', fallback)
+effect(() => {
+  const name = NAMES[gamut.value]
+  sample.classList.toggle('is-srgb', gamut.value === 'srgb')
+  sample.classList.toggle('is-supported', isDisplayable.value)
+  setText(sample, {
+    '.sample_reader': name ? `${name} space` : 'Unavailable on any device',
+    '.sample_real .sample_note': name,
+    '.sample_unavailable': name
+      ? `${name} is unavailable on this monitor`
+      : 'Unavailable on any device'
+  })
 })
 
-fallbackNote.addEventListener('click', () => {
-  let fallback = visible.get().fallback
-  let color = COLOR_FN === 'lch' ? lch(fallback) : oklch(fallback)
-  current.set(colorToValue(color!))
+effect(() => {
+  setCssVar('--sample-real', realCss.value, sample)
+  setCssVar('--sample-fallback', fallbackCss.value, sample)
+})
+
+$('.sample_fallback button').addEventListener('click', () => {
+  setColor(parseColor(formatHex(toSrgb(current.peek())))!.color)
 })

@@ -1,95 +1,98 @@
-import { clean } from '../../lib/colors.ts'
-import { computeExpression, cycleByWheel, parseValue } from '../../lib/math.ts'
-import { current, onCurrentChange } from '../../stores/current.ts'
-import { showCharts, showRec2020 } from '../../stores/settings.ts'
-import type { SpinEvent } from '../field/index.ts'
+import { effect } from '@preact/signals-core'
 
-interface MetaSpinInput {
-  max: number
-  min: number
-  step: number
-}
+import { clamp } from '../../lib/color.ts'
+import { AXES, AXIS_MAX, AXIS_STEP } from '../../lib/config.ts'
+import { $ } from '../../lib/dom.ts'
+import { evaluate } from '../../lib/expression.ts'
+import { hasModifier } from '../../lib/hotkeys.ts'
+import { axes, setAxes } from '../../stores/current.ts'
+import { focusByHotkey, setError } from '../field/index.ts'
 
-function getInputMeta(input: HTMLInputElement): MetaSpinInput {
-  return {
-    max: parseValue(input.getAttribute('aria-valuemax')!),
-    min: parseValue(input.getAttribute('aria-valuemin')!),
-    step: parseValue(input.getAttribute('step')!)
-  }
-}
+const REPEAT_DELAY_MS = 400
+const REPEAT_INTERVAL_MS = 50
 
-type ClampAngleFn = (
-  value: number,
-  range: Omit<MetaSpinInput, 'step'>
-) => number
-
-function clampInRange(useWheel: boolean, precision: number): ClampAngleFn {
-  return (value, range) => {
-    let angle = useWheel ? cycleByWheel(value, range.max) : value
-    let clamped = Math.max(range.min, Math.min(range.max, angle))
-
-    return clean(clamped, precision)
-  }
-}
-
-function initInput(type: 'a' | 'c' | 'h' | 'l'): HTMLInputElement {
-  let card = document.querySelector<HTMLDivElement>(`.card.is-${type}`)!
-  let text = card.querySelector<HTMLInputElement>('[role=spinbutton]')!
-  let bindedClamp = clampInRange(type === 'h', type === 'h' ? 2 : 4)
-
-  text.addEventListener('change', () => {
-    let { max, min } = getInputMeta(text)
-
-    let computedExpression = computeExpression(text.value)
-    let angleInRange = bindedClamp(computedExpression, { max, min })
-
-    current.setKey(type, angleInRange)
-    text.setAttribute('aria-valuenow', String(angleInRange))
-  })
-
-  text.addEventListener('spin', (e: SpinEvent) => {
-    let { max, min, step } = getInputMeta(text)
-
-    let value = computeExpression(text.value)
-    if (e.detail?.action === 'increase') {
-      value = value + step * e.detail.speed
-    } else if (e.detail?.action === 'decrease') {
-      value = value - step * e.detail.speed
+/** Call back on click, or repeatedly for as long as the button is held. */
+function onPress(button: HTMLElement, callback: (e: MouseEvent) => void) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let isRepeating = false
+  button.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return
+    // Touches are captured by default, which postpones `pointerleave`
+    button.releasePointerCapture(e.pointerId)
+    isRepeating = false
+    const repeat = (): void => {
+      isRepeating = true
+      callback(e)
+      timer = setTimeout(repeat, REPEAT_INTERVAL_MS)
     }
-
-    let parsedValue = bindedClamp(value, { max, min })
-
-    current.setKey(type, parsedValue)
-    text.setAttribute('aria-valuenow', String(parsedValue))
+    clearTimeout(timer)
+    timer = setTimeout(repeat, REPEAT_DELAY_MS)
   })
-
-  return text
+  for (const type of ['pointerup', 'pointerleave', 'pointercancel']) {
+    button.addEventListener(type, () => {
+      clearTimeout(timer)
+    })
+  }
+  button.addEventListener('click', e => {
+    if (!isRepeating) callback(e)
+  })
+  // Keep the focus where it is
+  button.addEventListener('mousedown', e => {
+    e.preventDefault()
+  })
 }
 
-let textL = initInput('l')
-let textC = initInput('c')
-let textH = initInput('h')
-let textA = initInput('a')
+for (const axis of AXES) {
+  const card = $(`.card.is-${axis}`)
+  const input = $<HTMLInputElement>('[role=spinbutton]', card)
 
-onCurrentChange({
-  alpha(value) {
-    textA.value = String(value)
-  },
-  c(value) {
-    textC.value = String(value)
-  },
-  h(value) {
-    textH.value = String(value)
-  },
-  l(value) {
-    textL.value = String(value)
+  function show(): void {
+    input.value = String(axes[axis].value)
+    input.setAttribute('aria-valuenow', input.value)
+    setError(input, '')
   }
-})
 
-showCharts.subscribe(show => {
-  document.body.classList.toggle('is-chart-hidden', !show)
-})
+  function apply(steps: number): void {
+    const typed = evaluate(input.value)
+    if (typed === undefined) {
+      setError(input, 'Invalid number')
+      return
+    }
+    const value = typed + steps * AXIS_STEP[axis]
+    // Pasted colors may be off the chart
+    const max = Math.max(AXIS_MAX[axis], axes[axis].peek())
+    // Hue is an angle, so it wraps around instead
+    setAxes({ [axis]: axis === 'h' ? value : clamp(0, value, max) })
+    show()
+  }
 
-showRec2020.subscribe(show => {
-  textC.setAttribute('aria-valuemax', String(show ? C_MAX_REC2020 : C_MAX))
-})
+  function spin(direction: number, e: { shiftKey: boolean }): void {
+    apply(direction * (e.shiftKey ? 0.1 : 1))
+  }
+
+  effect(show)
+
+  input.addEventListener('input', () => {
+    setError(input, '')
+  })
+  input.addEventListener('change', () => {
+    apply(0)
+  })
+  input.addEventListener('blur', show)
+  input.addEventListener('keydown', e => {
+    if (hasModifier(e)) return
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      spin(e.key === 'ArrowUp' ? 1 : -1, e)
+    } else {
+      focusByHotkey(e)
+    }
+  })
+
+  onPress($('.is-increase', card), e => {
+    spin(1, e)
+  })
+  onPress($('.is-decrease', card), e => {
+    spin(-1, e)
+  })
+}

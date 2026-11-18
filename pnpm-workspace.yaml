@@ -1,0 +1,8 @@
+packages:
+  - .
+
+# No dependency needs to run code on install
+onlyBuiltDependencies: []
+
+# Compromised releases are usually pulled from npm within a few days
+minimumReleaseAge: 10080

@@ -1,4 +1,0 @@
-{
-  "*.css": "stylelint --fix",
-  "*.svg": "svgo"
-}

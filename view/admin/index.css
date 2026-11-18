@@ -1,192 +1,99 @@
-.admin-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 1001;
-  display: none;
-  align-items: center;
-  justify-content: center;
+.dialog.is-admin {
+  width: min(800px, 100% - 24px);
 }
 
-.admin-modal.is-visible {
-  display: flex;
-}
-
-.admin-overlay {
-  position: absolute;
-  inset: 0;
-  background: oklch(0 0 0 / 85%);
-  backdrop-filter: blur(8px);
-}
-
-.admin-panel {
-  position: relative;
-  width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
-  padding: 32px;
-  overflow-y: auto;
-  background: oklch(0.98 0 0);
-  border: 1px solid oklch(0.7 0 0 / 20%);
-  border-radius: 12px;
-  box-shadow: 0 20px 60px oklch(0 0 0 / 50%);
-}
-
-.admin-panel h2 {
-  margin: 0 0 24px;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.admin-panel h3 {
-  margin: 0 0 16px;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.admin-content {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.pantone-setter {
-  padding: 20px;
-  background: var(--field-back);
-  border-radius: 8px;
-}
-
-.pantone-current {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.color-preview-small {
-  width: 60px;
-  height: 60px;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px oklch(0 0 0 / 15%);
-}
-
-.color-info-small {
-  flex: 1;
-  font-size: 14px;
-}
-
-.entries-list {
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.entries-header {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.entries-header h3 {
-  margin: 0;
-}
-
-.button-small {
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  background: var(--surface-ui-regular);
-  border: 1px solid var(--ui-border);
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.button-small:hover {
-  background: var(--surface-ui-accent);
-}
-
-.button-small:disabled {
-  cursor: not-allowed;
-  opacity: 60%;
-}
-
-.entries-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.no-entries {
-  padding: 20px;
-  text-align: center;
-  opacity: 60%;
-}
-
-.entry-item {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-  padding: 16px;
-  background: var(--field-back);
-  border-radius: 8px;
-}
-
-.entry-colors {
-  display: flex;
-  flex-shrink: 0;
-  gap: 8px;
-}
-
-.entry-color-preview {
-  flex-shrink: 0;
-  width: 60px;
-  height: 80px;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px oklch(0 0 0 / 15%);
-}
-
-.entry-details {
-  flex: 1;
-}
-
-.entry-name {
-  margin-bottom: 8px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.entry-info {
-  font-size: 13px;
-  line-height: 1.6;
-  opacity: 80%;
-}
-
-.entry-delta {
-  margin-top: 8px;
-  font-weight: 600;
-  color: var(--accent-color);
-}
-
-.entry-winner {
-  background: oklch(from var(--accent-color) l c h / 10%);
-  border: 2px solid var(--accent-color);
-}
-
-.admin-actions {
+.admin_row {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.admin-actions button {
-  flex: 1;
-  min-width: 150px;
-  padding: 12px;
+.admin_box {
+  padding: 16px;
+  background: var(--surface-0);
+  border-radius: 8px;
+
+  &:is(form) {
+    display: grid;
+    gap: 12px;
+  }
+}
+
+.admin_answer {
+  display: flex;
+  gap: 12px;
+  align-items: center;
   font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
+}
+
+.admin_empty {
+  padding: 20px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.admin_entries {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  list-style: none;
+  counter-reset: entry;
+}
+
+.swatch {
+  flex: none;
+  width: 60px;
+  height: 60px;
+  background: var(--swatch);
   border-radius: 6px;
-  transition: all 0.2s;
+  box-shadow: 0 2px 8px oklch(0 0 0 / 15%);
+}
+
+.entry {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  counter-increment: entry;
+  background: var(--surface-0);
+  border: 2px solid transparent;
+  border-radius: 8px;
+
+  &.is-winner {
+    background: var(--surface-ui-accent);
+    border-color: var(--accent);
+  }
+}
+
+.entry_details {
+  flex: 1 200px;
+  min-width: 0;
+  margin-left: 8px;
+  overflow-wrap: anywhere;
+}
+
+.entry_title {
+  font-size: 16px;
+  font-weight: 600;
+
+  &::before {
+    content: counter(entry) '. ';
+  }
+}
+
+/* It has to look different from a name which contains the same words */
+.entry_winner {
+  padding: 2px 8px;
+  color: var(--text-inverted);
+  white-space: nowrap;
+  background: var(--surface-primary);
+  border-radius: 6px;
+}
+
+.entry_delta {
+  font-size: 16px;
 }

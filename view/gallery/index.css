@@ -1,0 +1,141 @@
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  --text-outline:
+    0 0 4px oklch(0 0 0 / 80%), 0 0 8px oklch(0 0 0 / 60%),
+    1px 1px 2px oklch(0 0 0);
+
+  padding: 40px 20px;
+  font-family: system-ui, sans-serif;
+  text-align: center;
+  background: oklch(0.97 0 0);
+}
+
+h1 {
+  margin-bottom: 20px;
+  font-size: 2.5em;
+  color: oklch(0.25 0 0);
+}
+
+.gallery_return {
+  display: inline-block;
+  padding: 12px 32px;
+  margin-bottom: 30px;
+  font-weight: 600;
+  color: oklch(1 0 0);
+  text-decoration: none;
+  text-shadow: var(--text-outline);
+  background: var(--current-color, oklch(0.66 0.19 22));
+  border: 3px solid oklch(0 0 0 / 30%);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px oklch(0 0 0 / 25%);
+  transition: 0.3s;
+  transition-property: box-shadow, filter, translate;
+
+  &:hover {
+    box-shadow: 0 6px 20px oklch(0 0 0 / 35%);
+    filter: brightness(1.1);
+    translate: 0 -2px;
+  }
+
+  &.is-light {
+    color: oklch(0 0 0);
+    text-shadow: none;
+  }
+
+  &:active {
+    filter: brightness(0.95);
+    translate: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.gallery {
+  --chip-width: 120px;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  justify-content: center;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-size: 2em;
+  list-style: none;
+
+  /* At least 4 chips per row */
+  @media (width <= 768px) {
+    --chip-width: 85px;
+
+    font-size: 1.5em;
+  }
+
+  @media (width <= 400px) {
+    --chip-width: 70px;
+
+    font-size: 1.2em;
+  }
+}
+
+.gallery_year {
+  position: relative;
+  display: flex;
+  gap: 1px;
+  padding: 1px;
+  break-inside: avoid;
+  border: 2px solid transparent;
+
+  /* Years with two colors */
+  &:has(img + img) {
+    background: oklch(1 0 0);
+    border-color: oklch(0 0 0);
+  }
+
+  & img {
+    width: var(--chip-width);
+    height: auto;
+    box-shadow: 0 0 1px oklch(0 0 0 / 50%);
+  }
+}
+
+.gallery_label {
+  position: absolute;
+  top: 33%;
+  left: 50%;
+  font-weight: 600;
+  color: oklch(1 0 0);
+  text-shadow: var(--text-outline);
+  pointer-events: none;
+  translate: -50% -50%;
+}
+
+@media print {
+  @page {
+    margin: 0.5in;
+  }
+
+  body {
+    padding: 10px;
+    background: none;
+  }
+
+  h1 {
+    font-size: 1.5em;
+  }
+
+  .gallery_return {
+    display: none;
+  }
+
+  .gallery {
+    --chip-width: 100px;
+
+    font-size: 1.3em;
+  }
+}

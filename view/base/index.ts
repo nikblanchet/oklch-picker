@@ -1,53 +1,73 @@
-import { formatLch } from '../../lib/colors.ts'
-import { isHotkey } from '../../lib/hotkeys.ts'
-import { accent } from '../../stores/accent.ts'
-import { current, valueToColor } from '../../stores/current.ts'
-import { redo, undo } from '../../stores/history.ts'
-import { loading } from '../../stores/loading.ts'
-import simpleLogo from './simple.svg?url'
+import { effect } from '@preact/signals-core'
 
-// The only way to detect Mac is using old API
-// eslint-disable-next-line @typescript-eslint/no-deprecated
-const IS_MAC = /Mac|iPod|iPhone|iPad/.test(window.navigator.platform)
-const REDO_HOTKEYS = IS_MAC ? ['meta+shift+z'] : ['ctrl+shift+z', 'ctrl+y']
-const UNDO_HOTKEYS = IS_MAC ? ['meta+z'] : ['ctrl+z']
+import { $, setCssVar } from '../../lib/dom.ts'
+import { isLight } from '../../lib/describe.ts'
+import { getHotkey } from '../../lib/hotkeys.ts'
+import { remove } from '../../lib/storage.ts'
+import { axes, colorHistory, current } from '../../stores/current.ts'
+import { fallbackCss, visibleCss } from '../../stores/visible.ts'
+import logo from './simple.svg?raw'
 
-accent.subscribe(({ main, surface }) => {
-  document.body.style.setProperty('--accent', main)
-  document.body.style.setProperty('--surface-ui-accent', surface)
+// Earlier versions left decrypted entries and admin sessions on the device
+remove('localStorage', key => /^(?:contest:|settings:|sb-)/.test(key))
+remove('sessionStorage', key => key === 'savedFormState')
+
+// Fonts are loaded as a print stylesheet to not block the first render
+const fonts = $<HTMLLinkElement>('#fonts')
+function applyFonts(): void {
+  fonts.media = 'all'
+}
+if (fonts.sheet) {
+  applyFonts()
+} else {
+  fonts.addEventListener('load', applyFonts, { once: true })
+}
+
+effect(() => {
+  setCssVar('--current-color', visibleCss.value)
+  $<HTMLMetaElement>('meta[name=theme-color]').content = fallbackCss.value
 })
 
-loading.subscribe(value => {
-  document.body.classList.toggle('is-loading', value)
+effect(() => {
+  setCssVar('--current-hue', String(axes.h.value))
 })
 
-document.body.addEventListener('mousedown', () => {
-  document.body.classList.add('is-grabbing')
+effect(() => {
+  const { classList } = document.documentElement
+  classList.toggle('is-light', isLight(current.value))
+  classList.toggle('is-dark', axes.l.value < 0.4)
 })
 
-document.body.addEventListener('mouseup', () => {
-  document.body.classList.remove('is-grabbing')
-})
-
-document.body.addEventListener('keydown', e => {
-  if (isHotkey(REDO_HOTKEYS, e)) {
-    e.preventDefault()
-    redo()
-  } else if (isHotkey(UNDO_HOTKEYS, e)) {
-    e.preventDefault()
-    undo()
+const icon = $<HTMLLinkElement>('link[rel=icon][type="image/svg+xml"]')
+effect(() => {
+  const svg = logo
+    .replace('#fff', isLight(current.value) ? '#000' : '#fff')
+    .replace('#000', visibleCss.value)
+  const timer = setTimeout(() => {
+    icon.href = `data:image/svg+xml,${encodeURIComponent(svg)}`
+  }, 100)
+  return () => {
+    clearTimeout(timer)
   }
 })
 
-if (COLOR_FN === 'oklch') {
-  let iconLink = document.querySelector<HTMLLinkElement>(
-    'link[rel="icon"][type="image/svg+xml"]'
-  )
-  current.subscribe(value => {
-    let colorLogo = simpleLogo.replace('%23000', formatLch(valueToColor(value)))
-    if (value.l > 0.9) {
-      colorLogo = colorLogo.replace('%23fff', '%23000')
-    }
-    iconLink?.setAttribute('href', colorLogo)
-  })
+const UNDO = new Set(['ctrl+z', 'meta+z'])
+const REDO = new Set(['ctrl+shift+z', 'ctrl+y', 'meta+shift+z'])
+
+addEventListener('keydown', e => {
+  // Forms need the usual text undo
+  if (e.target instanceof Element && e.target.closest('form')) return
+  if (document.querySelector('dialog[open]')) return
+  const hotkey = getHotkey(e)
+  if (UNDO.has(hotkey)) {
+    e.preventDefault()
+    colorHistory.undo()
+  } else if (REDO.has(hotkey)) {
+    e.preventDefault()
+    colorHistory.redo()
+  }
+})
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(console.error)
 }

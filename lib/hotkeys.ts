@@ -1,19 +1,29 @@
-const NON_ENGLISH_LAYOUT = /^[^\x00-\x7F]$/
+type KeyInfo = Pick<
+  KeyboardEvent,
+  'altKey' | 'ctrlKey' | 'metaKey' | 'shiftKey'
+> & { code?: string; key?: string }
 
-export function convertKey(e: KeyboardEvent): string {
-  if (NON_ENGLISH_LAYOUT.test(e.key) && /^Key.$/.test(e.code)) {
-    return e.code.replace(/^Key/, '').toLowerCase()
-  }
-  return e.key.toLowerCase()
+/** The Latin letter of a key, whatever keyboard layout is active. */
+export function getKey({ code = '', key = '' }: KeyInfo): string {
+  // Autofill dispatches key events which have no `key` at all
+  return /^\P{ASCII}$/u.test(key) && /^Key.$/.test(code)
+    ? code.slice(3).toLowerCase()
+    : key.toLowerCase()
 }
 
-export function isHotkey(hotkeys: string[], e: KeyboardEvent): boolean {
-  let prefix = ''
-  if (e.metaKey) prefix += 'meta+'
-  if (e.ctrlKey) prefix += 'ctrl+'
-  if (e.altKey) prefix += 'alt+'
-  if (e.shiftKey) prefix += 'shift+'
-  let code = prefix + convertKey(e)
+/** Such as `ctrl+shift+z`. */
+export function getHotkey(e: KeyInfo): string {
+  return [
+    e.metaKey && 'meta',
+    e.ctrlKey && 'ctrl',
+    e.altKey && 'alt',
+    e.shiftKey && 'shift',
+    getKey(e)
+  ]
+    .filter(Boolean)
+    .join('+')
+}
 
-  return hotkeys.some(hotkey => code === hotkey)
+export function hasModifier(e: KeyInfo): boolean {
+  return e.ctrlKey || e.altKey || e.metaKey
 }

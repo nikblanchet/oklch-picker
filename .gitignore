@@ -1,4 +1,14 @@
 node_modules/
 dist/
 dev-dist/
-.env.local
+test-results/
+playwright-report/
+*.tsbuildinfo
+.vercel/
+package-lock.json
+
+# Secrets and entrants' personal data
+.env
+.env.*
+!.env.example
+pantone-contest-entries-*.json
