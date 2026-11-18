@@ -211,3 +211,23 @@
     mask-image: url('./art/duo2-second.webp');
   }
 }
+
+[data-look='orbit'] {
+  &::before {
+    mask-image: url('./art/orbit-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/orbit-ink.webp');
+  }
+}
+
+[data-look='prism'] {
+  &::before {
+    mask-image: url('./art/prism-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/prism-ink.webp');
+  }
+}

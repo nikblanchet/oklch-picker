@@ -33,7 +33,7 @@ const PERSON = { colorName: 'B', contact: 'a@example.com', name: 'A' }
 const PICK = { h: 20, l: 0.5, s: 0.5 }
 const DRAFT = {
   attempted: undefined,
-  look: 3,
+  look: 'gown',
   person: PERSON,
   pick: PICK,
   primer: COLOR,
@@ -76,8 +76,8 @@ test('ignores broken drafts', () => {
     localStorage.setItem(KEY, value)
     equal(loadOwn(), undefined)
   }
-  saveOwn({ ...DRAFT, look: 0.5 })
-  equal(loadOwn()?.look, 0)
+  localStorage.setItem(KEY, JSON.stringify({ ...DRAFT, look: 3 }))
+  equal(loadOwn()?.look, '')
 })
 
 test('reads hotkeys', () => {

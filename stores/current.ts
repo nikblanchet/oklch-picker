@@ -1,6 +1,7 @@
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core'
 
 import { clamp, toHex, wrapHue } from '../lib/color.ts'
+import { type Look, LOOKS, shuffle } from '../lib/looks.ts'
 import { DARKEST, LIGHTEST, type Pick, randomPick, toLch } from '../lib/real.ts'
 
 const state = signal(randomPick())
@@ -9,8 +10,11 @@ export const pick: ReadonlySignal<Pick> = state
 export const color = computed(() => toLch(state.value))
 export const hex = computed(() => toHex(color.value))
 
-/** The index of the sketch which wears the color. */
-export const look = signal(0)
+/** Everybody sees the sketches in another order. */
+export const lineup = shuffle(LOOKS)
+
+/** The sketch which wears the color. */
+export const look = signal<Look>(lineup[0]!)
 
 export function withChange(change: Partial<Pick>): Pick {
   const { h, l, s } = { ...state.peek(), ...change }

@@ -155,7 +155,7 @@ const error = $('#hex-error')
 function apply(): void {
   const typed = fromHex(code.value)
   if (!typed) {
-    error.textContent = 'Use six letters or digits, like #bb2648.'
+    error.textContent = 'Type six letters or digits such as #bb2648.'
     return
   }
   // Retyping the same code must not count as a change
@@ -193,6 +193,11 @@ effect(() => {
   return () => {
     clearTimeout(timer)
   }
+})
+
+// The check mark has to stand out against the color
+effect(() => {
+  $('.picker').classList.toggle('is-light', pick.value.l > 0.62)
 })
 
 // Tabs

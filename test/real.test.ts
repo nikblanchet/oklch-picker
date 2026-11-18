@@ -1,11 +1,11 @@
 import { deepStrictEqual, equal, ok } from 'node:assert/strict'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
 import { fromHex, toHex } from '../lib/color.ts'
 import { CONTEST_YEAR } from '../lib/config.ts'
 import { isLinearInGamut, oklchToLinear } from '../lib/gamut.ts'
-import { LOOKS, PAIRS } from '../lib/looks.ts'
+import { cast, COVER, LOOKS, PAIRS, shuffle } from '../lib/looks.ts'
 import {
   DARKEST,
   isReal,
@@ -68,9 +68,45 @@ test('primes like in 2026, as far as it is real', () => {
   }
 })
 
+test('shuffles without losing anything', () => {
+  deepStrictEqual(shuffle(['c', 'a', 'b']).toSorted(), ['a', 'b', 'c'])
+})
+
+test('keeps similar sketches apart', () => {
+  const now = WINNERS.map(i => i.colors.length)
+  for (const counts of [now, [1, ...now], [2, ...now], [1, 1, 1, ...now]]) {
+    const seen = new Set<string>()
+    for (let run = 0; run < 300; run++) {
+      const names = cast(counts)
+      seen.add(names.join())
+      ok(!names.slice(0, 12).includes(COVER))
+      const kinds = names.map(i => PAIRS.find(j => j.name === i)?.like ?? i)
+      for (const [i, kind] of kinds.entries()) {
+        equal(names[i]!.startsWith('duo'), counts[i] === 2)
+        for (let j = i + 1; j < kinds.length; j++) {
+          if (kinds[j] !== kind) continue
+          for (let columns = 1; columns <= 7; columns++) {
+            const x = Math.abs((i % columns) - (j % columns))
+            const y = Math.floor(j / columns) - Math.floor(i / columns)
+            ok(x + y >= 3, `${i} and ${j} in ${columns} columns`)
+          }
+        }
+      }
+    }
+    ok(seen.size > 290)
+    equal(new Set([...seen].map(i => i.match(/duo\d/g)!.join())).size, 2)
+  }
+})
+
+test('casts somebody even if nobody fits', () => {
+  ok(cast(Array.from({ length: 60 }, (_, i) => 1 + (i % 2))).every(Boolean))
+})
+
 test('has all sketches', () => {
-  for (const name of [...LOOKS.map(i => i.name), ...PAIRS]) {
+  const css = readFileSync('view/look/index.css', 'utf8')
+  for (const { name } of [...LOOKS, ...PAIRS]) {
     ok(existsSync(`view/look/art/${name}-wash.webp`), name)
     ok(existsSync(`view/look/art/${name}-ink.webp`), name)
+    ok(css.includes(`[data-look='${name}']`), name)
   }
 })

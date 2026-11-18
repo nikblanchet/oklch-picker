@@ -6,6 +6,7 @@ import {
   countMatches,
   createTicket,
   isBlank,
+  nameKey,
   type Person,
   submitEntry
 } from '../../lib/contest.ts'
@@ -22,7 +23,7 @@ import {
   takeGuest
 } from '../../lib/draft.ts'
 import { explainError, publicKey, supabase } from '../../stores/backend.ts'
-import { color, look, pick, setPick } from '../../stores/current.ts'
+import { color, lineup, look, pick, setPick } from '../../stores/current.ts'
 import {
   isParty,
   readParty,
@@ -70,7 +71,7 @@ function findEdited(): Submitted | undefined {
   const best = count(attempted) > count(submitted) ? attempted : submitted
   if (count(best) > 0) return best
   // On the own phone, it is rather the owner who is fixing both fields
-  return isParty ? undefined : submitted
+  return isParty ? undefined : (submitted ?? attempted)
 }
 
 /** Make it obvious whose entry is about to be replaced. */
@@ -122,7 +123,7 @@ function save(): void {
   if (isWiped || isOutdated()) return
   const state = {
     attempted,
-    look: look.peek(),
+    look: look.peek().name,
     person: readPerson(),
     pick: pick.peek(),
     primer,
@@ -142,7 +143,7 @@ if (draft) {
   contact.value = draft.person.contact
   colorName.value = draft.person.colorName ?? ''
   setPick(draft.pick)
-  look.value = draft.look
+  look.value = lineup.find(i => i.name === draft.look) ?? look.peek()
   if (guest) abandoned.start(getIdleTimeout(submitted), guest.expiresAt)
   if (submitted && route.peek() === 'start') redirect('done')
 }
@@ -208,10 +209,14 @@ form.addEventListener('keydown', e => {
 
 /** On a shared device somebody may press “edit” and walk away. */
 function mayReplace({ person }: Submitted): boolean {
+  // A name alone is only enough on the own phone
+  const isSame = isBlank(person.contact)
+    ? !isParty && nameKey(person) === nameKey(readPerson())
+    : countMatches(person, readPerson()) === 2
   return (
-    countMatches(person, readPerson()) === 2 ||
+    isSame ||
     confirm(
-      `Are you ${person.name}, ${person.contact}? OK replaces that guess. Cancel adds a new one, and the earlier guess can no longer be changed.`
+      `Are you ${person.name}${person.contact && ` (${person.contact})`}? OK replaces that guess. Cancel adds a new one, and the earlier guess can no longer be changed.`
     )
   )
 }
@@ -250,18 +255,11 @@ async function send(): Promise<void> {
 }
 
 function validate(): boolean {
-  const person = readPerson()
-  const [missing, message] = isBlank(person.name)
-    ? [name, 'Add your name.']
-    : isBlank(person.contact)
-      ? [contact, 'Add an email or phone number, so we can reach you.']
-      : []
-  for (const input of [name, contact]) {
-    input.setAttribute('aria-invalid', String(input === missing))
-  }
-  error.textContent = message ?? ''
-  missing?.focus()
-  return !missing
+  const isMissing = isBlank(readPerson().name)
+  name.setAttribute('aria-invalid', String(isMissing))
+  error.textContent = isMissing ? 'Add your name.' : ''
+  if (isMissing) name.focus()
+  return !isMissing
 }
 
 async function onSubmit(): Promise<void> {

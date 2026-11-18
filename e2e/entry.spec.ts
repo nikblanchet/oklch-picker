@@ -8,6 +8,7 @@ import {
   expectReset,
   fillForm,
   getHex,
+  logIn,
   pick,
   replayTyping,
   setHex,
@@ -47,15 +48,32 @@ test.describe('own phone', () => {
     expect(JSON.stringify(rows)).not.toMatch(/alice|merlot/i)
   })
 
-  test('requires a name and a contact', async ({ backend, page }) => {
+  test('only requires a name', async ({ backend, page }) => {
     await pick(page)
     await fillForm(page, ' \u{3164} ', 'alice@example.com')
     await click(page, SUBMIT)
     await expect(page.getByLabel('Your name')).toBeFocused()
-    await fillForm(page, 'Alice', '\u{1}')
-    await click(page, SUBMIT)
-    await expect(page.locator('#entry-error')).toContainText('email or phone')
     expect(backend.log).toEqual([])
+    await submit(page, 'Alice', '')
+    await pick(page, '#bb2648')
+    await submit(page, 'Alice', '')
+    expect(await guesses(backend)).toEqual(['#bb2648'])
+    await logIn(page)
+    await expect(page.locator('.entry')).toContainText('Not given')
+  })
+
+  test('edits without a contact', async ({ backend, page }) => {
+    backend.loseNextResponse = true
+    await pick(page)
+    await fillForm(page, 'Alcie', '')
+    await click(page, SUBMIT)
+    await expect(page.locator('#entry-error')).toContainText('Are you online')
+    page.once('dialog', dialog => dialog.accept())
+    await submit(page, 'Alice', '')
+    // Unexpected questions are dismissed, which would add an entry
+    await pick(page)
+    await submit(page, 'Alice', 'alice@example.com')
+    expect(await entries(backend)).toHaveLength(1)
   })
 
   test('walks through the form with Enter', async ({ backend, page }) => {
@@ -259,7 +277,7 @@ test.describe('party', () => {
     await expect(page).toHaveURL('/?party#pick')
     expect(await getHex(page)).not.toBe('#bb2648')
 
-    await click(page, 'This is the one')
+    await click(page, 'This is my guess')
     expect(await replayTyping(page, page.getByLabel('Your name'))).not.toMatch(
       /alice/i
     )
@@ -287,6 +305,29 @@ test.describe('party', () => {
     page.once('dialog', dialog => dialog.accept())
     await submit(page, 'Bob Smith', 'another@example.com')
     expect(await entries(backend)).toHaveLength(3)
+  })
+
+  test('does not trust a name alone', async ({ backend, page }) => {
+    backend.loseNextResponse = true
+    await pick(page)
+    await fillForm(page, 'Sam', '')
+    await click(page, SUBMIT)
+    await expect(page.locator('#entry-error')).toContainText('Are you online')
+    page.once('dialog', dialog => dialog.dismiss())
+    await submit(page, 'sám', '')
+    expect(await entries(backend)).toHaveLength(2)
+    await logIn(page)
+    await expect(page.getByText('2 entries have this name')).toHaveCount(2)
+    await expect(page.getByText('this contact')).toHaveCount(0)
+  })
+
+  test('fixes a name without a contact', async ({ backend, page }) => {
+    await pick(page)
+    await submit(page, 'Bob', '')
+    await pick(page)
+    page.once('dialog', dialog => dialog.accept())
+    await submit(page, 'Bob Smith', '')
+    expect(await entries(backend)).toHaveLength(1)
   })
 
   test('protects an abandoned edit', async ({ backend, page }) => {

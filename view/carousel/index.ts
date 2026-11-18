@@ -1,82 +1,67 @@
-import { effect } from '@preact/signals-core'
-
 import { $, create, setCssVar } from '../../lib/dom.ts'
-import { getLook, LOOKS } from '../../lib/looks.ts'
-import { look } from '../../stores/current.ts'
+import { lineup, look } from '../../stores/current.ts'
 
-/** Copies on both ends make it endless. */
-const CLONES = 4
-const SETTLE_MS = 140
-const DRAG_THRESHOLD = 4
+const DRAG_THRESHOLD = 6
+const EASING_MS = 90
+const WHEEL_IDLE_MS = 120
+const WHEEL_THRESHOLD = 0.1
+const QUICK_MS = 300
+/** In pixels per millisecond, right before the finger is lifted. */
+const FLICK_SPEED = 0.3
+const FLICK_MS = 100
 
 const rail = $('#looks')
-const slides = Array.from({ length: LOOKS.length + 2 * CLONES }, (_, i) => {
-  const slide = create('div', 'carousel_slide', rail)
+const count = lineup.length
+const slides = lineup.map(({ name }) => {
+  const slide = create('div', 'look', rail)
   // Nothing is downloaded until the screen is shown
-  create('div', 'look', slide).dataset['look'] = getLook(i - CLONES).name
+  slide.dataset['look'] = name
   return slide
 })
 
-let pitch = 0
-let target: number | undefined
-let drag: { isMoved: boolean; left: number; x: number } | undefined
-let wasDragged = false
-let isTouched = false
-let timer: ReturnType<typeof setTimeout> | undefined
+// The sketches stand in a circle, so there is no end to run into
+let position = Math.max(0, lineup.indexOf(look.peek()))
+let target = position
+let pitch = 1
+let frame = 0
+let wheelTimer: ReturnType<typeof setTimeout> | undefined
 
-function toScroll(index: number): number {
-  return (index + 0.5) * pitch - rail.clientWidth / 2
+function wrap(value: number): number {
+  return ((value % count) + count) % count
 }
 
-function getPosition(): number {
-  return (rail.scrollLeft + rail.clientWidth / 2) / pitch - 0.5
-}
-
-function highlight(): void {
-  const position = getPosition()
+function render(): void {
+  const reach = rail.clientWidth / pitch / 2 + 1.5
   for (const [i, slide] of slides.entries()) {
-    setCssVar('--away', Math.min(1, Math.abs(i - position)).toFixed(2), slide)
+    const offset = wrap(i - position + count / 2) - count / 2
+    const away = Math.min(1, Math.abs(offset))
+    slide.classList.toggle('is-near', Math.abs(offset) < reach)
+    slide.style.opacity = String(1 - 0.5 * away)
+    slide.style.transform = `translateX(${offset * pitch}px) scale(${1 - 0.13 * away})`
   }
-  look.value = (Math.round(position) - CLONES + LOOKS.length) % LOOKS.length
+  look.value = lineup[wrap(Math.round(position))]!
 }
 
-function jumpToCurrent(): void {
-  rail.scrollLeft = toScroll(CLONES + (look.peek() % LOOKS.length))
+function stop(): void {
+  cancelAnimationFrame(frame)
+  clearTimeout(wheelTimer)
 }
 
 function slideTo(index: number): void {
+  stop()
   target = index
-  // The next scroll event starts it again
-  clearTimeout(timer)
+  let before = performance.now()
   const isCalm = matchMedia('(prefers-reduced-motion: reduce)').matches
-  rail.scrollTo({
-    behavior: isCalm ? 'auto' : 'smooth',
-    left: toScroll(index)
-  })
-}
-
-/** Move from a copy to the original, which looks exactly the same. */
-function leaveClones(index: number): number {
-  const shift =
-    index < CLONES
-      ? LOOKS.length
-      : index >= CLONES + LOOKS.length
-        ? -LOOKS.length
-        : 0
-  if (shift) rail.scrollLeft = toScroll(index + shift)
-  return index + shift
-}
-
-function settle(): void {
-  if (drag || isTouched || !rail.clientWidth) return
-  target = undefined
-  rail.classList.remove('is-held')
-  leaveClones(Math.round(getPosition()))
-}
-
-function settleLater(): void {
-  clearTimeout(timer)
-  timer = setTimeout(settle, SETTLE_MS)
+  function step(now: number): void {
+    const decay = Math.min(1, Math.exp((before - now) / EASING_MS))
+    const left = (target - position) * decay
+    const isDone = isCalm || Math.abs(left * pitch) < 0.3
+    before = now
+    position = isDone ? target : target - left
+    render()
+    if (!isDone) frame = requestAnimationFrame(step)
+  }
+  step(before)
 }
 
 new ResizeObserver(() => {
@@ -87,32 +72,17 @@ new ResizeObserver(() => {
   pitch = Math.max(
     0.52 * height,
     Math.min(0.42 * clientWidth, 0.6 * height),
-    clientWidth / (2 * CLONES - 1)
+    clientWidth / (count - 2)
   )
   setCssVar('--height', `${height}px`, rail.parentElement!)
-  setCssVar('--pitch', `${pitch}px`, rail)
-  jumpToCurrent()
-  highlight()
+  render()
 }).observe(rail)
 
 new ResizeObserver(([entry]) => {
   const stage = entry!.target as HTMLElement
-  setCssVar(
-    '--height',
-    `${Math.min(stage.clientHeight, 1.2 * stage.clientWidth)}px`,
-    stage
-  )
+  const height = Math.min(stage.clientHeight, 1.2 * stage.clientWidth)
+  setCssVar('--height', `${height}px`, stage)
 }).observe($('#done .stage'))
-
-rail.addEventListener(
-  'scroll',
-  () => {
-    if (!rail.clientWidth || !pitch) return
-    highlight()
-    settleLater()
-  },
-  { passive: true }
-)
 
 for (const type of ['pointerdown', 'keydown', 'wheel']) {
   rail.parentElement!.addEventListener(
@@ -124,53 +94,107 @@ for (const type of ['pointerdown', 'keydown', 'wheel']) {
   )
 }
 
-for (const type of ['touchstart', 'touchend', 'touchcancel']) {
-  rail.addEventListener(
-    type,
-    () => {
-      isTouched = type === 'touchstart'
-      settleLater()
-    },
-    { passive: true }
-  )
+interface Drag {
+  from: number
+  isMoved: boolean
+  start: PointerEvent
+  trail: PointerEvent[]
 }
 
-// Fingers and trackpads scroll on their own
+let drag: Drag | undefined
+
+function findNext(direction: number, slack = 0): number {
+  return direction * Math.ceil(direction * position - slack)
+}
+
+function findDestination({ from, start, trail }: Drag, end: PointerEvent) {
+  const recent = trail.find(i => end.timeStamp - i.timeStamp < FLICK_MS) ?? end
+  const speed =
+    (recent.clientX - end.clientX) /
+    Math.max(1, end.timeStamp - recent.timeStamp)
+  if (Math.abs(speed) < FLICK_SPEED) return Math.round(position)
+  const direction = Math.sign(speed)
+  const next = findNext(direction)
+  // Every flick counts, even if the previous one is still on its way
+  return end.timeStamp - start.timeStamp < QUICK_MS &&
+    direction === Math.sign(position - from)
+    ? direction * Math.max(direction * next, direction * target + 1)
+    : next
+}
+
+function cancel(): void {
+  slideTo(drag?.isMoved ? Math.round(position) : target)
+  drag = undefined
+}
+
 rail.addEventListener('pointerdown', e => {
-  if (e.pointerType !== 'mouse' || e.button !== 0) return
-  drag = { isMoved: false, left: rail.scrollLeft, x: e.clientX }
+  if (e.button !== 0 || e.ctrlKey) return
+  if (drag && rail.hasPointerCapture(drag.start.pointerId)) return
+  stop()
+  rail.setPointerCapture(e.pointerId)
+  drag = { from: position, isMoved: false, start: e, trail: [e] }
 })
-addEventListener('pointermove', e => {
-  if (!drag) return
-  drag.isMoved ||= Math.abs(e.clientX - drag.x) > DRAG_THRESHOLD
+
+rail.addEventListener('pointermove', e => {
+  if (e.pointerId !== drag?.start.pointerId) return
+  // A menu may have swallowed the release
+  if (!e.buttons) {
+    cancel()
+    return
+  }
+  const distance = e.clientX - drag.start.clientX
+  drag.isMoved ||= Math.abs(distance) > DRAG_THRESHOLD
   if (!drag.isMoved) return
-  rail.classList.add('is-held')
-  rail.scrollLeft = drag.left - (e.clientX - drag.x)
-})
-for (const type of ['pointerup', 'pointercancel']) {
-  addEventListener(type, () => {
-    wasDragged = drag?.isMoved ?? false
-    drag = undefined
-    if (!wasDragged) return
-    slideTo(Math.round(getPosition()))
-    settleLater()
-  })
-}
-rail.addEventListener('click', e => {
-  const index = slides.findIndex(i => i.contains(e.target as Node))
-  if (index !== -1 && !wasDragged) slideTo(index)
+  drag.trail.push(e)
+  position = drag.from - distance / pitch
+  render()
 })
 
-for (const [id, step] of [
-  ['#look-previous', -1],
-  ['#look-next', 1]
-] as const) {
-  $(id).addEventListener('click', () => {
-    slideTo(leaveClones(target ?? Math.round(getPosition())) + step)
-  })
-}
+rail.addEventListener('pointerup', e => {
+  if (e.pointerId !== drag?.start.pointerId) return
+  const { left, width } = rail.getBoundingClientRect()
+  if (!width) {
+    cancel()
+    return
+  }
+  slideTo(
+    drag.isMoved
+      ? findDestination(drag, e)
+      : Math.round(position + (e.clientX - left - width / 2) / pitch)
+  )
+  drag = undefined
+})
 
-effect(() => {
-  $('#look-number').textContent =
-    `${(look.value % LOOKS.length) + 1} of ${LOOKS.length}`
+rail.addEventListener('pointercancel', e => {
+  if (e.pointerId === drag?.start.pointerId) cancel()
+})
+
+// Thumbs move in arcs, which must not turn into scrolling the page
+rail.addEventListener(
+  'touchmove',
+  e => {
+    if (drag?.isMoved && e.cancelable) e.preventDefault()
+  },
+  { passive: false }
+)
+
+rail.parentElement!.addEventListener(
+  'wheel',
+  e => {
+    if (drag || e.ctrlKey || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return
+    if (e.cancelable) e.preventDefault()
+    stop()
+    position += e.deltaX / pitch
+    target = findNext(Math.sign(e.deltaX), WHEEL_THRESHOLD)
+    render()
+    wheelTimer = setTimeout(slideTo, WHEEL_IDLE_MS, target)
+  },
+  { passive: false }
+)
+
+$('#look-previous').addEventListener('click', () => {
+  slideTo(target - 1)
+})
+$('#look-next').addEventListener('click', () => {
+  slideTo(target + 1)
 })

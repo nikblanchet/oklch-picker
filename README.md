@@ -1,7 +1,7 @@
 # Guess the Pantone Color of the Year
 
-A small contest site. Entrants dress fashion sketches in their guess, leave
-their contact details, and whoever is closest to Pantone’s announcement wins.
+A small contest site. Entrants dress fashion sketches in their guess and sign
+their name. Whoever is closest to Pantone’s announcement wins.
 
 It started as a fork of the wonderful [OKLCH Color Picker] by [Evil Martians].
 
@@ -12,9 +12,9 @@ It started as a fork of the wonderful [OKLCH Color Picker] by [Evil Martians].
 
 1. Install Node.js 24+ and [pnpm](https://pnpm.io/), then run `pnpm install`.
 2. Run `pnpm keygen`. Save the **private key** in your password manager.
-   Without it nobody, including you, can read the contact details.
+   Without it nobody, including you, can read who entered.
 3. Copy `.env.example` to `.env.local` and fill it in. Add the same three
-   variables to the Vercel project, for Production and Preview. The build fails
+   variables to Production and Preview of the Vercel project. The build fails
    if any of them is missing.
 4. In the Supabase SQL editor, run [the migrations](./supabase/migrations/) in
    order. They also take the table of the 2026 site away from the public. Run
@@ -34,7 +34,7 @@ The site supports Safari 15.5, Chrome 111, Firefox 114 and newer.
 
 ### Upgrading from the 2026 site
 
-Do steps 4 and 5 right before deploying, since the old site stops working.
+Do steps 4 and 5 right before deploying because the old site stops working.
 Entries on the server stay available under 2026 in the admin panel, but the new
 site deletes everything the old one stored in browsers. If a device has entries
 which never reached the server, copy `localStorage['contest:entries']` from its
@@ -52,13 +52,13 @@ in. Prefer your own device over the one entrants use.
 
 - **Share the link.** People keep their entry on their own phone and can come
   back to change it.
-- **At parties,** open `/?party`, or press “Hand this phone to someone else”.
-  Until you press “Exit” on the first screen, the phone forgets every guest,
+- **At parties,** open `/?party` or press “Hand this phone to someone else”.
+  Until you press “Exit” on the first screen, the phone forgets every guest
   but keeps your own entry. Use it on all shared devices.
 - **Close submissions** as soon as Pantone announces the color. Missed it? Set
-  the closing time to the moment of the announcement, in your own time zone: colors which were chosen
-  later are marked as late and cannot win. A time in the future schedules the
-  closing. Opening submissions again removes it.
+  the closing time to the moment of the announcement in your own time zone.
+  Colors which were chosen later are marked as late and cannot win. A time in
+  the future schedules the closing. Opening submissions again removes it.
 - **Set the color** as HEX or any CSS color. No entries are accepted while it
   is set. Entries are ranked by CIEDE2000 between sRGB colors; wider gamut
   guesses are mapped to sRGB first.
@@ -77,7 +77,7 @@ in. Prefer your own device over the one entrants use.
 ## Colors
 
 The picker only offers colors which both sRGB screens can show and real
-surfaces can have, according to Pointer’s gamut. Every previous winner is among
+surfaces can have according to Pointer’s gamut. Every previous winner is among
 them. The database does not enforce this. Everybody starts from a random color,
 which is stored as the “primer” to see how it influences guesses.
 
@@ -91,31 +91,33 @@ which is stored as the “primer” to see how it influences guesses.
   (ECDH P-256, HKDF, AES-256-GCM) and bound to their row. Colors and
   timestamps are not encrypted.
 - **IP addresses** are hashed for rate limiting. Whoever has database access
-  could reverse them. They are purged after a day of activity, and whenever you
+  could reverse them. They are purged after a day of activity and whenever you
   close submissions by hand, set the color or delete all entries.
-- **Editing** needs a random 256-bit token. The database only has its hash,
-  the token stays in the entrant’s browser along with their details.
+- **Editing** needs a random 256-bit token. The database only has its hash.
+  The token stays in the entrant’s browser along with their details.
 - **Admin sessions,** the private key and decrypted entries only exist in
   memory. They are dropped when the panel is closed or idle for 10 minutes.
 - **Party mode** reloads the page from scratch after each guest, 5 idle minutes
   after submitting, or 15 idle minutes otherwise.
-- **Pages** have a strict Content Security Policy with Trusted Types, and can
+- **Pages** have a strict Content Security Policy with Trusted Types and can
   only talk to this Supabase project.
 
 Known limits:
 
 - There is no CAPTCHA. A determined person can enter many times (the panel
-  flags repeated contacts) or fill the contest up. To recover, delete the spam
-  from `contest.entries` by `created_at`, or raise `max_entries` in
+  flags repeated names and contacts) or fill the contest up. To recover, delete the spam
+  from `contest.entries` by `created_at` or raise `max_entries` in
   `contest.contests`.
 - Rate limits rely on the `CF-Connecting-IP` header. The fallback,
   `X-Forwarded-For`, can be forged.
-- Only accepted requests count towards the rate limits, since Postgres rolls
+- Only accepted requests count towards the rate limits because Postgres rolls
   the counter back together with a rejected one.
 - Until submissions are closed for real, an entry which is on time can be
   handed to somebody else. The panel flags details changed after closing.
+- The contact is optional, so a winner may only be known by name.
 - Safari may clear the storage of sites which were not visited for a week.
-  Such entrants can only enter again, which the panel flags.
+  Such entrants can only enter again, which the panel flags if the name or
+  contact is the same.
 - Guests can leave party mode and see the entry of the phone’s owner.
 - Entries of 2026 were encrypted with a password which was public, so only the
   database protects them.
@@ -131,14 +133,15 @@ Known limits:
 | `pnpm format` | Prettier                                         |
 
 Browser tests need `pnpm exec playwright install` once. They run the production
-build in Chromium, WebKit and Firefox, against the real migrations on an
+build in Chromium, WebKit and Firefox against the real migrations on an
 in-memory Postgres. Set `CHROMIUM_PATH` to use an installed Chromium.
 
 - `lib/` has logic without state, `stores/` has signals, `view/` connects them
   to the markup in `index.html`.
 - `art/` paints the sketches. Each has a watercolor mask, which CSS fills with
   any color, and an ink layer. List new ones in `lib/looks.ts` and
-  `view/look/index.css`.
+  `view/look/index.css`. Their order is random on every visit. `cast()` keeps
+  similar ones apart, including the pairs and the model of the first screen.
 - `build/` has Vite plugins for placeholders, CSP and the service worker.
-- The fonts are subsets of Bodoni Moda and Jost, see
+- The fonts are subsets of Bodoni Moda and Jost under
   [their license](./view/base/fonts/OFL.txt).

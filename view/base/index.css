@@ -68,3 +68,13 @@ body {
     animation: none !important;
   }
 }
+
+/* Colors are the point */
+.chip,
+.look,
+.swatch,
+.sample,
+.ribbon_thumb,
+.winner_colors {
+  forced-color-adjust: none;
+}

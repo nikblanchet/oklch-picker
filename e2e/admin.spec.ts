@@ -37,7 +37,8 @@ test('ranks entries @mobile', async ({ page }) => {
   const rows = page.locator('.entry')
   await expect(rows).toHaveCount(2)
   await expect(rows.first()).toContainText(XSS)
-  await expect(rows.first()).toContainText('2 entries')
+  await expect(rows.first()).toContainText('2 entries have this contact')
+  await expect(rows.first()).not.toContainText('this name')
   await expect(rows.first().locator('.entry_named')).toContainText(XSS)
   await expect(rows.last().locator('.entry_named')).toBeHidden()
   await expect(page.locator('dialog img')).toHaveCount(0)
@@ -197,7 +198,7 @@ test('still lists entries sealed to another key', async ({ page }) => {
   await logIn(page, 'admin@example.com', PASSWORD, privateKey)
   await page.getByRole('button', { name: 'Refresh' }).click()
   await expect(page.getByText('does not match')).toBeVisible()
-  await expect(page.getByText('No readable contact')).toHaveCount(2)
+  await expect(page.getByText('No readable details')).toHaveCount(2)
 })
 
 test('reads 2026 entries', async ({ page }) => {

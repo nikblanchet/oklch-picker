@@ -413,6 +413,20 @@ function render(look, seed) {
   shade.filter = 'blur(6px)'
   shade.drawImage(soft.canvas, 0, 0)
   shade.filter = 'none'
+  // Flat planes in the shadow (positive) or in the light (negative)
+  for (const [corners, tone] of look.facet ?? []) {
+    const plane = shape(
+      corners.map((p, i) => [p, corners[(i + 1) % corners.length]]),
+      24
+    )
+    washPoly(tone > 0 ? shade : mask, plane, {
+      layers: 5,
+      alpha: Math.abs(tone) / 9,
+      core: Math.abs(tone),
+      amt: 0.1,
+      rgb: '18,12,26'
+    })
+  }
   for (const l of look.limb ?? []) {
     const c = spline(l, 3),
       [a, b] = ribbon(c, (t, p) => p[2])

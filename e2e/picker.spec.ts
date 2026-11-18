@@ -5,9 +5,13 @@ import { LOOKS } from '../lib/looks.ts'
 import { WINNERS } from '../lib/winners.ts'
 import { click, expect, getHex, setHex, test } from './fixtures.ts'
 
-function lookNumber(page: Page, number: number) {
-  return expect(page.locator('#look-number')).toHaveText(
-    `${number} of ${LOOKS.length}`
+/** Starting from one, in the order of this visit. */
+async function lookNumber(page: Page, number: number) {
+  const slide = page.locator('#looks > .look').nth(number - 1)
+  await expect(slide).toHaveCSS('opacity', '1')
+  await expect(page.locator('#sign .look')).toHaveAttribute(
+    'data-look',
+    (await slide.getAttribute('data-look'))!
   )
 }
 
@@ -107,38 +111,67 @@ test('cycles through the looks @mobile', async ({ page }) => {
   for (let i = 1; i <= LOOKS.length + 2; i++) {
     await click(page, 'Next look')
     await lookNumber(page, ((i - 1) % LOOKS.length) + 1)
-    await page.waitForTimeout(500)
   }
-  await click(page, 'This is the one')
-  await expect(page.locator('#sign .look')).toHaveAttribute('data-look', 'suit')
+  await click(page, 'This is my guess')
+  const chosen = page.locator('#sign .look')
+  const name = (await chosen.getAttribute('data-look'))!
+  await page.addInitScript(() => {
+    Math.random = () => 0.25
+  })
   await page.reload()
   await click(page, 'Change color')
-  await lookNumber(page, 2)
+  await expect(page.locator(`#looks > [data-look=${name}]`)).toHaveCSS(
+    'opacity',
+    '1'
+  )
+  await expect(chosen).toHaveAttribute('data-look', name)
 })
 
 test('counts fast taps', async ({ page }) => {
   await page.setViewportSize({ height: 520, width: 820 })
   await page.goto('/#pick')
-  for (let i = 0; i < 6; i++) await click(page, 'Previous look')
-  await lookNumber(page, 5)
+  for (let i = 0; i < 30; i++) await click(page, 'Previous look')
+  await lookNumber(page, 3 * LOOKS.length - 30 + 1)
 })
 
 test('follows fingers @touch', async ({ context, page }) => {
   await page.goto('/#pick')
   const session = await context.newCDPSession(page)
-  const touch = (type: 'touchEnd' | 'touchMove' | 'touchStart', x = 0, y = 0) =>
+  // The speed must not depend on how busy the machine is
+  let timestamp = Date.now() / 1000
+  const touch = (
+    type: 'touchCancel' | 'touchEnd' | 'touchMove' | 'touchStart',
+    x?: number,
+    y = 0
+  ) =>
     session.send('Input.dispatchTouchEvent', {
-      touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
+      timestamp: (timestamp += 0.02),
+      touchPoints: x === undefined ? [] : [{ x, y }],
       type
     })
   await touch('touchStart', 120, 200)
   for (let x = 130; x <= 230; x += 10) await touch('touchMove', x, 200)
-  const scroll = () => page.locator('#looks').evaluate(i => i.scrollLeft)
+  const scroll = () =>
+    page.locator('#looks > .look').first().getAttribute('style')
   const held = await scroll()
   await page.waitForTimeout(400)
   expect(await scroll()).toBe(held)
+  timestamp += 0.4
   await touch('touchEnd')
   await lookNumber(page, LOOKS.length)
+
+  // There is no end, and every short flick counts
+  for (let i = 0; i < 2 * LOOKS.length + 3; i++) {
+    await touch('touchStart', 300, 200)
+    for (const x of [280, 260, 240]) await touch('touchMove', x, 200)
+    await touch('touchEnd')
+  }
+  await lookNumber(page, 3)
+
+  await touch('touchStart', 300, 200)
+  for (const x of [280, 260, 240]) await touch('touchMove', x, 200 + x / 10)
+  await touch('touchCancel')
+  await lookNumber(page, 3)
 
   const { y } = (await page.locator('.ribbon').boundingBox())!
   await touch('touchStart', 300, y + 10)
@@ -154,16 +187,23 @@ test('drags the looks with a mouse', async ({ page }) => {
   await page.mouse.move(x, y)
   await page.mouse.down()
   await page.mouse.move(x - 250, y, { steps: 5 })
+  await page.waitForTimeout(150)
   await page.mouse.up()
   await lookNumber(page, 2)
-  await expect(page.locator('#looks')).not.toHaveClass(/is-held/)
+  await page.mouse.click(x - 250, y)
+  await lookNumber(page, 1)
+  await page.mouse.wheel(80, 0)
+  await lookNumber(page, 2)
+  await page.mouse.wheel(-80, 0)
+  await click(page, 'Previous look')
+  await lookNumber(page, LOOKS.length)
 })
 
 test('shows past winners from anywhere @mobile', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('#runway')).toContainText('Cloud Dancer')
   await click(page, 'Make my guess')
-  await click(page, 'Past winners')
+  await click(page, 'See past winners')
   await expect(page.locator('#archive > li')).toHaveCount(WINNERS.length)
   const sizes = await page
     .locator('#archive .look')
@@ -206,13 +246,55 @@ for (const [width, height] of [
       await expect(page.locator('#start .action')).toBeInViewport({ ratio: 1 })
     }
     await page.goto('/#pick')
-    await expect(page.getByText('This is the one')).toBeInViewport({ ratio: 1 })
+    await expect(page.getByText('This is my guess')).toBeInViewport({
+      ratio: 1
+    })
   })
 }
 
 test('avoids media queries which old Safari drops', () => {
   for (const file of globSync('dist/assets/*.css')) {
     expect(readFileSync(file, 'utf8')).not.toMatch(/@media[^{]*not \(/)
+  }
+})
+
+test('varies the sketches between visits', async ({ page }) => {
+  const read = async () => {
+    await page.goto('/#pick')
+    await page.reload()
+    return page
+      .locator('#looks > .look')
+      .evaluateAll(all => all.map(i => i.getAttribute('data-look')).join())
+  }
+  const first = await read()
+  await page.addInitScript(() => {
+    Math.random = () => 0.25
+  })
+  expect(await read()).not.toBe(first)
+})
+
+test('keeps the cover tidy', async ({ page }) => {
+  for (const [width, height] of [
+    [320, 568],
+    [390, 664],
+    [430, 739],
+    [700, 700],
+    [568, 320],
+    [667, 331],
+    [852, 393],
+    [1920, 400]
+  ] as const) {
+    await page.setViewportSize({ height, width })
+    await page.goto('/')
+    const lines = await page
+      .locator('.cover_name')
+      .evaluate(
+        i => i.clientHeight / Number.parseFloat(getComputedStyle(i).lineHeight)
+      )
+    expect(Math.round(lines), `${width}`).toBe(1)
+    const left = (await page.locator('.cover_line.is-left').boundingBox())!
+    const right = (await page.locator('.cover_line.is-right').boundingBox())!
+    expect(right.x - left.x - left.width, `${width}`).toBeGreaterThan(40)
   }
 })
 

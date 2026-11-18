@@ -20,7 +20,7 @@ export interface Submitted {
 export interface Draft {
   /** The last try, which may or may not have reached the server. */
   attempted: Submitted | undefined
-  look: number
+  look: string
   person: Person
   pick: Pick
   primer: Lch
@@ -58,7 +58,7 @@ function parse(value: unknown): Draft | undefined {
   if (!isPick(pick) || !isLch(primer) || !isPerson(person)) return undefined
   return {
     attempted: isSubmitted(attempted) ? attempted : undefined,
-    look: Number.isSafeInteger(look) ? Math.abs(look as number) : 0,
+    look: typeof look === 'string' ? look : '',
     person,
     pick,
     primer,

@@ -1,38 +1,36 @@
+/* Trackpads would go back in history */
+:root:has(.is-pick:not([hidden])) {
+  overscroll-behavior-x: none;
+}
+
 .carousel {
   position: absolute;
   inset: 0;
-  user-select: none;
-  scroll-snap-type: x mandatory;
-
-  &.is-held {
-    scroll-snap-type: none;
-  }
-}
-
-.carousel_slide {
-  display: grid;
-  flex: 0 0 var(--pitch);
-  place-content: center;
-  min-width: 0;
+  overflow: hidden;
   cursor: grab;
-  scroll-snap-align: center;
-  scroll-snap-stop: always;
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
 
-  .is-held > & {
+  &:active {
     cursor: grabbing;
   }
 
   & > .look {
+    position: absolute;
+    top: calc(50% - var(--height) / 2);
+    left: calc(50% - var(--height) * 19 / 60);
+    visibility: hidden;
     height: var(--height);
-    /* stylelint-disable-next-line alpha-value-notation */
-    opacity: calc(1 - 0.5 * var(--away));
-    transform: scale(calc(1 - 0.13 * var(--away)));
     transform-origin: 50% 90%;
 
-    /* Moving the slides would be cancelled out by snapping */
-    .is-hinting & {
-      animation: hint 1.5s 0.7s 2 ease-in-out;
+    &.is-near {
+      visibility: visible;
+      will-change: transform, opacity;
     }
+  }
+
+  &.is-hinting > .look {
+    animation: hint 1.5s 0.7s 2 ease-in-out;
   }
 }
 

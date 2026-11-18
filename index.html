@@ -6,7 +6,9 @@
       name="viewport"
       content="width=device-width,initial-scale=1,viewport-fit=cover"
     />
-    <title>Guess the %CONTEST_YEAR% Pantone Color of the Year</title>
+    <title>
+      Contest: Guess the Pantone Color of the Year for %CONTEST_YEAR%
+    </title>
     <meta
       name="description"
       content="Pick one color. The closest guess wins."
@@ -19,7 +21,7 @@
     <meta name="apple-mobile-web-app-title" content="Color Guess" />
     <meta
       property="og:title"
-      content="Guess the %CONTEST_YEAR% Pantone Color of the Year"
+      content="Contest: Guess the Pantone Color of the Year for %CONTEST_YEAR%"
     />
     <meta
       property="og:description"
@@ -37,14 +39,22 @@
   <body>
     <main>
       <section id="start" class="screen is-start">
-        <header class="gutter">
-          <h1 tabindex="-1">
-            <span class="start_title">Guess the Pantone Color of the Year</span>
-            <span class="start_year">%CONTEST_YEAR%</span>
+        <header class="cover gutter">
+          <p class="caps cover_kicker">The annual contest</p>
+          <h1 class="cover_title" tabindex="-1">
+            <span class="cover_words">
+              Guess the
+              <span class="cover_name">Pantone Color of the Year</span>
+            </span>
+            <span class="cover_year">%CONTEST_YEAR%</span>
           </h1>
-          <p class="start_rules">
-            Pick one color. The closest guess wins. Entries close the moment
-            Pantone announces, in early December.
+          <div class="cover_model"></div>
+          <p class="cover_line is-left">
+            <strong>Pick one color.</strong> The closest guess wins.
+          </p>
+          <p class="cover_line is-right">
+            <strong>Don’t dawdle.</strong> Entries close when Pantone announces
+            in early December.
           </p>
         </header>
         <div class="start_past">
@@ -79,18 +89,11 @@
 
       <section id="pick" class="screen is-pick" hidden>
         <div class="bar gutter">
-          <h2 class="caps" tabindex="-1">
-            Swipe &nbsp;·&nbsp; Look <span id="look-number"></span>
-          </h2>
-          <a class="caps link" href="#past">Past winners</a>
+          <h2 class="unseen" tabindex="-1">Pick your color</h2>
+          <a class="caps link" href="#past">See past winners</a>
         </div>
         <div class="stage">
-          <div
-            id="looks"
-            class="rail carousel is-hinting"
-            tabindex="-1"
-            aria-hidden="true"
-          ></div>
+          <div id="looks" class="carousel is-hinting" aria-hidden="true"></div>
           <div class="swatch"></div>
           <button
             id="look-previous"
@@ -174,7 +177,7 @@
             </label>
             <p id="hex-error" class="error" role="status"></p>
           </div>
-          <a class="action" href="#sign">This is the one</a>
+          <a class="action" href="#sign">This is my guess</a>
           <p id="color-status" class="unseen" role="status"></p>
         </div>
       </section>
@@ -204,7 +207,10 @@
             />
           </label>
           <label class="label">
-            Email or phone, in case you win
+            <span
+              >Email or phone, in case you win
+              <span class="muted">(optional)</span></span
+            >
             <input
               id="entry-contact"
               class="input"
@@ -330,8 +336,8 @@
         <form id="admin-deadline" class="admin_box" autocomplete="off">
           <label class="label">
             <span>
-              <strong>Closing time</strong> in the time zone of this device,
-              past or future. Colors chosen later cannot win.
+              <strong>Closing time</strong> in the time zone of this device. It
+              can be in the past. Colors chosen later cannot win.
             </span>
             <input
               class="input"

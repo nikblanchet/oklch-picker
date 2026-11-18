@@ -149,7 +149,7 @@ export async function submit(page: Page, name: string, contact: string) {
 export async function pick(page: Page, hex?: string) {
   await click(page, /Make my guess|PANIC/)
   if (hex) await setHex(page, hex)
-  await click(page, 'This is the one')
+  await click(page, 'This is my guess')
 }
 
 export async function logIn(

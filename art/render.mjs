@@ -12,7 +12,7 @@ const browser = await chromium.launch({
 })
 const page = await browser.newPage()
 await page.addStyleTag({
-  content: `@font-face { font-family: Display; src: ${font('bodoni-italic')} }`
+  content: `@font-face { font-family: Display; src: ${font('jost-medium')} }`
 })
 await page.addScriptTag({
   content: read('paint.js', 'utf8') + read('looks.js', 'utf8')
@@ -68,6 +68,16 @@ const files = await page.evaluate(async () => {
     save(`${look.name}-wash`, painted[look.name].mask)
     save(`${look.name}-ink`, painted[look.name].top)
   })
+  // The cover model is still waiting for a color, and hides what is behind
+  const cover = canvas(W, H)
+  cover.drawImage(painted.mermaid.sil, 0, 0)
+  cover.globalCompositeOperation = 'source-in'
+  cover.fillStyle = PAPER
+  cover.fillRect(0, 0, W, H)
+  cover.globalCompositeOperation = 'source-over'
+  cover.drawImage(painted.mermaid.top, 0, 0)
+  save('cover', cover.canvas)
+
   PAIRS.forEach((pair, i) => {
     const { back, front, top } = renderPair(pair.front, pair.back, 81 + 9 * i)
     save(`${pair.name}-wash`, pair.first === 'front' ? front : back)
@@ -87,9 +97,10 @@ const files = await page.evaluate(async () => {
     preview.drawImage(dress(painted[name], color), -38 + i * 236, 128, 310, 490)
   })
   preview.fillStyle = '#18161a'
-  preview.font = '60px Display'
+  preview.font = '40px Display'
+  preview.letterSpacing = '7px'
   preview.textAlign = 'center'
-  preview.fillText('Guess the Color of the Year', 600, 88)
+  preview.fillText('GUESS THE PANTONE COLOR OF THE YEAR', 600, 84)
   result['public/og.jpg'] = preview.canvas.toDataURL('image/jpeg', 0.88)
 
   for (const size of [48, 180, 192, 512]) {

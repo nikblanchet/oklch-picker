@@ -1,7 +1,6 @@
 import { effect } from '@preact/signals-core'
 
 import { setCssVar } from '../../lib/dom.ts'
-import { getLook } from '../../lib/looks.ts'
 import { look } from '../../stores/current.ts'
 
 /** Download sketches only once they are about to be seen. */
@@ -38,7 +37,7 @@ const outline = [
 setCssVar('--pinked', `polygon(${outline.join()})`)
 
 effect(() => {
-  const { name, x, y } = getLook(look.value)
+  const { name, x, y } = look.value
   setCssVar('--pin-x', String(x))
   setCssVar('--pin-y', String(y))
   setCssVar('--pin-turn', x < 0 ? '-3deg' : '3deg')

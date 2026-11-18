@@ -20,7 +20,7 @@ export interface Entry {
   /** When the color was last changed. */
   guessedAt: string
   id: string
-  /** Missing when the key in use does not reveal anybody to contact. */
+  /** Missing when the key in use does not reveal anybody. */
   person: Person | undefined
   primer: Lch
   updatedAt: string
@@ -56,7 +56,7 @@ async function attempt(
     const person = await decrypt()
     if (!isPerson(person)) return undefined
     const clean = cleanPerson(person)
-    return isBlank(clean.contact) ? undefined : clean
+    return isBlank(clean.name) && isBlank(clean.contact) ? undefined : clean
   } catch {
     return undefined
   }

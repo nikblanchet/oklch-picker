@@ -12,6 +12,7 @@ import {
   countMatches,
   createTicket,
   isBlank,
+  nameKey,
   submitEntry
 } from '../lib/contest.ts'
 import { generateKeyPair, importPrivateKey } from '../lib/crypto.ts'
@@ -52,6 +53,8 @@ test('compares people', () => {
   equal(countMatches(person, { ...person, name: 'B' }), 1)
   equal(countMatches(person, { ...person, contact: 'b' }), 1)
   equal(countMatches(person, { contact: 'b', name: 'B' }), 0)
+  equal(countMatches({ contact: '', name: 'A' }, { contact: '', name: 'B' }), 1)
+  equal(nameKey({ contact: '', name: 'Zoë \u{200D}Ａ' }), 'zoea')
 })
 
 test('goes all the way to the database and back', async () => {

@@ -58,10 +58,17 @@ export function contactKey({ contact }: Person): string {
   return withoutInvisible(contact.normalize('NFKC')).toLowerCase()
 }
 
+export function nameKey({ name }: Person): string {
+  return withoutInvisible(name.normalize('NFKD'))
+    .replace(/[\u{300}-\u{36F}]/gu, '')
+    .toLowerCase()
+}
+
 /** One match is either a fixed typo, a namesake or a shared family address. */
 export function countMatches(a: Person, b: Person): number {
-  const order = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
-  return Number(order === 0) + Number(contactKey(a) === contactKey(b))
+  return (
+    Number(nameKey(a) === nameKey(b)) + Number(contactKey(a) === contactKey(b))
+  )
 }
 
 export function cleanPerson({ colorName = '', contact, name }: Person): Person {

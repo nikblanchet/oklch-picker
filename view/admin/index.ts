@@ -2,7 +2,7 @@ import { batch, computed, effect, signal } from '@preact/signals-core'
 
 import { formatOklch, type Lch, toHex } from '../../lib/color.ts'
 import { CONTEST_YEAR } from '../../lib/config.ts'
-import { contactKey } from '../../lib/contest.ts'
+import { contactKey, isBlank, nameKey, type Person } from '../../lib/contest.ts'
 import { importPrivateKey, type PrivateKey } from '../../lib/crypto.ts'
 import { describe } from '../../lib/describe.ts'
 import {
@@ -47,14 +47,16 @@ const cutoff = computed(() =>
 const ranking = computed(() =>
   rank(overview.value.entries, contest.value?.answer, cutoff.value)
 )
-const entriesPerContact = computed(() => {
-  const counts = new Map<string | undefined, number>()
-  for (const { person } of overview.value.entries) {
-    const contact = person && contactKey(person)
-    counts.set(contact, (counts.get(contact) ?? 0) + 1)
-  }
-  return counts
-})
+const countCopies = [nameKey, contactKey].map(getKey =>
+  computed(() => {
+    const counts = new Map<string, number>()
+    for (const { person } of overview.value.entries) {
+      const key = person && getKey(person)
+      if (key) counts.set(key, (counts.get(key) ?? 0) + 1)
+    }
+    return (person: Person) => counts.get(getKey(person)) ?? 0
+  })
+)
 
 const dialog = $<HTMLDialogElement>('#admin')
 const body = $('.dialog_body', dialog)
@@ -180,15 +182,23 @@ function toLocalInput(iso: string): string {
 
 function renderEntry({ deltaE, entry, isLate, isWinner }: Ranked<Entry>): Node {
   const { createdAt, guess, guessedAt, id, person, primer, updatedAt } = entry
-  const copies = entriesPerContact.value.get(person && contactKey(person))!
+  const [names = 0, contacts = 0] = person
+    ? countCopies.map(i => i.value(person))
+    : []
   const row = template.content.cloneNode(true) as DocumentFragment
   $('.entry', row).classList.toggle('is-winner', isWinner)
   setCssVar('--paint', toHex(primer), $('.sample.is-primer', row))
   setCssVar('--paint', toHex(guess), $('.sample.is-guess', row))
   setText(row, {
     '.entry_color_name': person?.colorName ?? '',
-    '.entry_contact': person?.contact ?? '',
-    '.entry_copies': person && copies > 1 ? `⚠️ ${copies} entries` : '',
+    '.entry_contact':
+      person && isBlank(person.contact) ? 'Not given' : (person?.contact ?? ''),
+    '.entry_copies': [
+      names > 1 && `⚠️ ${names} entries have this name`,
+      contacts > 1 && `⚠️ ${contacts} entries have this contact`
+    ]
+      .filter(Boolean)
+      .join(' '),
     '.entry_date': [
       formatDate(createdAt),
       guessedAt !== createdAt && `color changed ${formatDate(guessedAt)}`,
@@ -198,7 +208,7 @@ function renderEntry({ deltaE, entry, isLate, isWinner }: Ranked<Entry>): Node {
       .join(', '),
     '.entry_delta': deltaE === undefined ? '' : `Delta-E: ${deltaE.toFixed(2)}`,
     '.entry_guess': summarize(guess),
-    '.entry_name': person?.name ?? '🔒 No readable contact details',
+    '.entry_name': person?.name ?? '🔒 No readable details',
     '.entry_primer': summarize(primer)
   })
   $('.entry_named', row).hidden = !person?.colorName
@@ -249,7 +259,7 @@ effect(() => {
       ? `Submissions are closed${closesAt ? ` as of ${formatDate(closesAt)}` : ''}`
       : closesAt
         ? `Submissions are open until ${formatDate(closesAt)}`
-        : 'Submissions are open, no deadline is set',
+        : 'Submissions are open without a deadline',
     '#admin-toggle': isOpen ? 'Close submissions' : 'Open submissions'
   })
 })
