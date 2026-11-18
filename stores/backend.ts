@@ -11,7 +11,10 @@ const MESSAGES = new Map([
   ['contest_closed', 'Sorry, the contest is closed.'],
   ['contest_full', 'Sorry, the contest is full.'],
   ['invalid_key', 'This is not a valid private key.'],
-  ['network_error', 'Could not reach the server. Are you online?'],
+  [
+    'network_error',
+    'Could not reach the server. Are you online? Entries close when Pantone announces.'
+  ],
   ['not_admin', 'This account is not a contest admin.'],
   ['rate_limited', 'Too many entries from this network. Try again later.'],
   ['session_expired', 'The session has expired. Log in again.'],

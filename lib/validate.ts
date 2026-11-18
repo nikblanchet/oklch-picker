@@ -19,6 +19,7 @@ export function isPerson(value: unknown): value is Person {
   return (
     isRecord(value) &&
     typeof value['name'] === 'string' &&
-    typeof value['contact'] === 'string'
+    typeof value['contact'] === 'string' &&
+    ['string', 'undefined'].includes(typeof value['colorName'])
   )
 }

@@ -3,8 +3,7 @@
   max-height: 90dvh;
   margin: auto;
   overscroll-behavior: contain;
-  background: oklch(0.98 0 0);
-  border-radius: var(--radius);
+  background: var(--paper);
   box-shadow: 0 20px 60px oklch(0 0 0 / 50%);
 
   &::backdrop {
@@ -13,13 +12,12 @@
   }
 
   & h2 {
-    font-size: 24px;
-    font-weight: 600;
+    font: 400 28px / 1.1 var(--font-display);
   }
 
   & h3 {
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 500;
   }
 }
 
@@ -36,7 +34,7 @@
 
 .dialog_error {
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--danger);
 
   &:empty {
@@ -59,26 +57,21 @@
   padding: 10px 20px;
   font-size: 14px;
   font-weight: 500;
-  background: var(--surface-ui-regular);
-  border: none;
-  border-radius: 6px;
+  background: var(--field);
+  border: 1px solid;
 
   &:hover {
-    background: var(--surface-ui-accent);
+    background: var(--card);
   }
 
   &.is-primary {
-    color: var(--text-inverted);
-    background: var(--surface-primary);
-
-    &:hover {
-      filter: brightness(1.1);
-    }
+    color: var(--paper);
+    background: var(--ink);
+    border-color: var(--ink);
   }
 
   &.is-danger {
     color: var(--danger);
-    background: var(--surface-ui-danger);
   }
 
   /* iOS zooms in on fields with smaller text */

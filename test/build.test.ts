@@ -1,28 +1,10 @@
 import { deepStrictEqual, ok, rejects } from 'node:assert/strict'
-import { readdirSync } from 'node:fs'
 import { test } from 'node:test'
 
-import { parseChips, renderGallery } from '../build/html.ts'
 import { checkEnv, contentSecurityPolicy, security } from '../build/security.ts'
-import { CHROMA_LIMIT, CONTEST_YEAR } from '../lib/config.ts'
+import { CHROMA_LIMIT } from '../lib/config.ts'
 import { generateKeyPair } from '../lib/crypto.ts'
 import { MIGRATION } from './database.ts'
-
-test('has a color chip for every previous year', () => {
-  const chips = parseChips(readdirSync('public/images/pantone'))
-  deepStrictEqual(
-    [...new Set(chips.map(i => Number(i.year)))],
-    Array.from({ length: CONTEST_YEAR - 2000 }, (_, i) => 2000 + i)
-  )
-})
-
-test('puts the latest year first and ignores other files', () => {
-  const html = renderGallery(
-    parseChips(['2001_b.webp', '.DS_Store', '2000_a.webp', '2001_"x.webp'])
-  )
-  ok(html.indexOf('2001') < html.indexOf('2000'))
-  ok(!html.includes('DS_Store') && !html.includes('"x'))
-})
 
 test('allows own code and one Supabase project only', () => {
   deepStrictEqual(
@@ -32,9 +14,9 @@ test('allows own code and one Supabase project only', () => {
       "script-src 'self'",
       "worker-src 'self'",
       "manifest-src 'self'",
-      "style-src 'self' https://fonts.googleapis.com",
-      'font-src https://fonts.gstatic.com',
-      "img-src 'self' data:",
+      "style-src 'self'",
+      "font-src 'self'",
+      "img-src 'self'",
       "connect-src 'self' https://abc.supabase.co",
       "base-uri 'none'",
       "form-action 'none'",

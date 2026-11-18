@@ -43,7 +43,7 @@
     "unicorn/require-post-message-target-origin": "off",
     "typescript/no-unnecessary-type-parameters": "off"
   },
-  "ignorePatterns": ["dist/"],
+  "ignorePatterns": ["art/", "dist/"],
   "overrides": [
     {
       "files": ["build/**", "e2e/**", "test/**"],

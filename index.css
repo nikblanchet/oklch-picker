@@ -2,18 +2,11 @@
 
 @import url('./view/base/reset.css') layer(reset);
 @import url('./view/base/index.css') layer(base);
-@import url('./view/layout/index.css') layer(components);
-@import url('./view/card/index.css') layer(components);
+@import url('./view/screen/index.css') layer(components);
+@import url('./view/look/index.css') layer(components);
+@import url('./view/winners/index.css') layer(components);
+@import url('./view/carousel/index.css') layer(components);
+@import url('./view/picker/index.css') layer(components);
 @import url('./view/entry/index.css') layer(components);
-@import url('./view/field/index.css') layer(components);
-@import url('./view/chart/index.css') layer(components);
-@import url('./view/range/index.css') layer(components);
-@import url('./view/sample/index.css') layer(components);
-@import url('./view/code/index.css') layer(components);
-@import url('./view/button/index.css') layer(components);
-@import url('./view/icon/index.css') layer(components);
-@import url('./view/model/index.css') layer(components);
-@import url('./view/actions/index.css') layer(components);
-@import url('./view/success/index.css') layer(components);
 @import url('./view/dialog/index.css') layer(components);
 @import url('./view/admin/index.css') layer(components);

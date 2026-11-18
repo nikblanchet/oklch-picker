@@ -1,22 +1,22 @@
 import { deepStrictEqual, equal, ok } from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { parseColor } from '../lib/color.ts'
+import { parseColor } from '../lib/parse.ts'
 import { deltaE, rank } from '../lib/score.ts'
 
 function entry(name: string, code: string, day = 1) {
   const updatedAt = `2026-11-0${day}T00:00:00Z`
   const person = name === 'junk' ? undefined : {}
-  return { guess: parseColor(code)!.color, name, person, updatedAt }
+  return { guess: parseColor(code)!, name, person, updatedAt }
 }
 
-const ANSWER = parseColor('#f0efeb')!.color
+const ANSWER = parseColor('#f0efeb')!
 
 test('measures CIEDE2000', () => {
   equal(deltaE(ANSWER, ANSWER), 0)
   const distance = deltaE({ c: 0, h: 0, l: 0 }, { c: 0, h: 0, l: 1 })
   ok(Math.abs(distance - 100) < 0.01)
-  const [red, blue] = [parseColor('red')!.color, parseColor('blue')!.color]
+  const [red, blue] = [parseColor('red')!, parseColor('blue')!]
   equal(deltaE(red, blue).toFixed(1), '55.8')
 })
 
@@ -25,7 +25,7 @@ test('ignores the hue wrap-around', () => {
 })
 
 test('scores invisible colors as they were displayed', () => {
-  const fallback = parseColor('#ff0000')!.color
+  const fallback = parseColor('#ff0000')!
   ok(deltaE({ ...fallback, c: 0.5 }, fallback) < 3)
 })
 

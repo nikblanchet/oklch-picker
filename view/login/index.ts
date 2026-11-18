@@ -75,7 +75,6 @@ closeOnBackdropClick(dialog)
 dialog.addEventListener('close', forget)
 addEventListener('pagehide', forget)
 $('#login-cancel').addEventListener('click', close)
-$('#login-open').addEventListener('click', open)
 
 addEventListener('keydown', e => {
   if (getHotkey(e) !== 'ctrl+shift+a') return

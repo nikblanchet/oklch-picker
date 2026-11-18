@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [{ "source": "/reports/:page*", "destination": "/#past" }],
   "headers": [
     {
       "source": "/(.*)",
@@ -29,7 +30,7 @@
       ]
     },
     {
-      "source": "/og-oklch.png",
+      "source": "/og.jpg",
       "headers": [
         { "key": "Cross-Origin-Resource-Policy", "value": "cross-origin" }
       ]

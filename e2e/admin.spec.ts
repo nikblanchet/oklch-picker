@@ -3,14 +3,15 @@ import { readFile } from 'node:fs/promises'
 import { CONTEST_YEAR } from '../lib/config.ts'
 import { generateKeyPair } from '../lib/crypto.ts'
 import {
+  click,
   countSessions,
   entries,
   expect,
   expectReset,
   logIn,
   PASSWORD,
+  pick,
   replayTyping,
-  setAxis,
   storage,
   submit,
   test
@@ -19,16 +20,15 @@ import {
 const XSS = '<img src=x onerror="document.title=1">'
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/')
-  for (const [name, hue] of [
-    ['Alice', '30'],
-    [XSS, '200']
+  await page.goto('/?party')
+  for (const [name, hex] of [
+    ['Alice', '#d98a7a'],
+    [XSS, '#46b5ab']
   ] as const) {
-    await setAxis(page, 'Hue', hue)
+    await pick(page, hex)
+    await page.getByLabel('Name your color').fill(name === XSS ? XSS : '')
     await submit(page, name, 'same@example.com')
-    await expectReset(page, () =>
-      page.getByRole('button', { name: /^Yay/ }).click()
-    )
+    await expectReset(page, () => click(page, 'Hand this phone'))
   }
 })
 
@@ -38,6 +38,8 @@ test('ranks entries @mobile', async ({ page }) => {
   await expect(rows).toHaveCount(2)
   await expect(rows.first()).toContainText(XSS)
   await expect(rows.first()).toContainText('2 entries')
+  await expect(rows.first().locator('.entry_named')).toContainText(XSS)
+  await expect(rows.last().locator('.entry_named')).toBeHidden()
   await expect(page.locator('dialog img')).toHaveCount(0)
 
   await page.getByLabel('Pantone’s color').fill('#d98a7a')
@@ -57,7 +59,6 @@ test('ranks entries @mobile', async ({ page }) => {
 })
 
 test('forgets everything when closed', async ({ backend, page }) => {
-  await setAxis(page, 'Hue', '55')
   await logIn(page)
   await expect(page.locator('.entry')).toHaveCount(2)
   expect(await storage(page)).not.toMatch(/Alice|refresh|0000/)
@@ -65,13 +66,22 @@ test('forgets everything when closed', async ({ backend, page }) => {
   await expectReset(page, () => page.keyboard.press('Escape'))
   expect(await countSessions(backend)).toBe(0)
   expect(await page.content()).not.toContain('Alice')
-  await expect(page.getByRole('spinbutton', { name: 'Hue' })).toHaveValue('270')
 
   await page.keyboard.press('Control+Shift+A')
   await expect(page.getByText('Admin Login')).toBeVisible()
   expect(await replayTyping(page, page.getByLabel('Password'))).not.toMatch(
     /admin|horse/
   )
+})
+
+test('keeps the own entry of the host', async ({ page }) => {
+  await click(page, 'Exit')
+  await pick(page)
+  await submit(page, 'Host', 'host@example.com')
+  await logIn(page)
+  await expect(page.locator('.entry')).toHaveCount(3)
+  await Promise.all([page.waitForEvent('load'), page.keyboard.press('Escape')])
+  await expect(page.getByText('By Host')).toBeVisible()
 })
 
 test('forgets credentials when cancelled', async ({ page }) => {
@@ -207,8 +217,8 @@ test('closes, exports and deletes', async ({ backend, page }) => {
   await page.getByRole('button', { name: 'Export' }).click()
   const exported = await readFile(await (await download).path(), 'utf8')
   expect(JSON.parse(exported)).toMatchObject([
-    { person: { name: XSS } },
-    { guess: { h: 30 }, person: { name: 'Alice' } }
+    { person: { colorName: XSS, name: XSS } },
+    { person: { name: 'Alice' } }
   ])
 
   page.once('dialog', dialog => dialog.accept())

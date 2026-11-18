@@ -1,0 +1,182 @@
+.picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  align-self: center;
+
+  & > .action {
+    margin-top: 3px;
+  }
+}
+
+.ribbon {
+  position: relative;
+  height: 34px;
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+
+  & > canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  & > input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0%;
+  }
+}
+
+.ribbon_thumb {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  left: calc(100% * var(--position) - 11px);
+  width: 22px;
+  background: var(--guess);
+  border: 3px solid var(--paper);
+  box-shadow: 0 0 0 1.5px var(--ink);
+
+  :focus-visible + & {
+    outline: 2px solid;
+    outline-offset: 4px;
+  }
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 18px;
+
+  & > button {
+    position: relative;
+    padding: 14px 0 2px;
+    margin-top: -8px;
+    color: var(--pencil);
+    background: none;
+    border: none;
+    border-bottom: 1.5px solid transparent;
+
+    /* Easier to hit */
+    &::after {
+      position: absolute;
+      inset: 0 -8px -6px;
+      content: '';
+    }
+
+    &[aria-selected='true'] {
+      color: var(--ink);
+      border-color: currentcolor;
+    }
+
+    &:last-child {
+      margin-left: auto;
+    }
+  }
+}
+
+.panel {
+  height: 132px;
+
+  @media (height >= 620px) {
+    height: 146px;
+  }
+
+  @media (height <= 499px) {
+    height: 120px;
+  }
+}
+
+.chip {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  appearance: none;
+  cursor: pointer;
+  background: var(--paint);
+  border: none;
+  box-shadow: inset 0 0 0 1px var(--hairline);
+
+  &:checked,
+  &.is-current {
+    position: relative;
+    box-shadow:
+      0 0 0 2.5px var(--paper),
+      0 0 0 4px var(--ink);
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &:focus-visible {
+    position: relative;
+    outline-offset: 5px;
+  }
+}
+
+.shades {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 3px;
+}
+
+.tune {
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 3px;
+}
+
+.tune_row {
+  display: grid;
+  grid-template: auto minmax(0, 1fr) / repeat(7, 1fr);
+  gap: 1px 3px;
+}
+
+.tune_label {
+  font-size: 13px;
+  line-height: 1.25;
+
+  &.is-before {
+    grid-column: 1 / 4;
+
+    &::before {
+      content: '< ';
+    }
+  }
+
+  &.is-after {
+    grid-column: 5 / 8;
+    text-align: right;
+
+    &::after {
+      content: ' >';
+    }
+  }
+}
+
+.exact {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+
+@media (width >= 860px) and (height >= 600px) {
+  .picker {
+    gap: 16px;
+  }
+
+  .ribbon {
+    height: 52px;
+  }
+
+  .panel {
+    height: 200px;
+  }
+}

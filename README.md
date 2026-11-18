@@ -1,9 +1,9 @@
 # Guess the Pantone Color of the Year
 
-A small contest site. Entrants pick a color in OKLCH, leave their contact
-details, and whoever is closest to Pantone’s announcement wins.
+A small contest site. Entrants dress fashion sketches in their guess, leave
+their contact details, and whoever is closest to Pantone’s announcement wins.
 
-It is built on the wonderful [OKLCH Color Picker] by [Evil Martians].
+It started as a fork of the wonderful [OKLCH Color Picker] by [Evil Martians].
 
 [OKLCH Color Picker]: https://github.com/evilmartians/oklch-picker
 [Evil Martians]: https://evilmartians.com/
@@ -38,7 +38,7 @@ Do steps 4 and 5 right before deploying, since the old site stops working.
 Entries on the server stay available under 2026 in the admin panel, but the new
 site deletes everything the old one stored in browsers. If a device has entries
 which never reached the server, copy `localStorage['contest:entries']` from its
-console first. Afterwards, open the site once on every shared device while it
+console first. Afterwards, open `/?party` once on every shared device while it
 is online (twice on iPadOS 15, which first shows the old page), and send a test
 entry from a real iPhone.
 
@@ -50,27 +50,42 @@ is gone.
 Open `/?admin` or press <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>A</kbd> to log
 in. Prefer your own device over the one entrants use.
 
-- **Close submissions** before Pantone announces the color. To schedule it, for
-  example:
+- **Share the link.** People keep their entry on their own phone and can come
+  back to change it.
+- **At parties,** open `/?party`, or press “Hand this phone to someone else”.
+  Until you press “Exit” on the first screen, the phone forgets every guest,
+  but keeps your own entry. Use it on all shared devices.
+- **Close submissions** as soon as Pantone announces the color. Then delete
+  entries which were submitted or edited after the announcement: the panel
+  shows both times. A deadline can be scheduled as a safety net, and opening
+  submissions again removes it:
 
   ```sql
-  update contest.contests set closes_at = '2026-12-01 00:00 America/New_York'
+  update contest.contests set closes_at = '2026-12-04 00:00 America/New_York'
   where year = 2027;
   ```
-
-  Opening submissions again removes the deadline.
 
 - **Set the color** as HEX or any CSS color. No entries are accepted while it
   is set. Entries are ranked by CIEDE2000 between sRGB colors; wider gamut
   guesses are mapped to sRGB first.
-- **Delete the entries** once the prize is handed out.
+- **Two colors?** Set one, note its winner, then set the other.
+- **Delete the entries** once the prize is handed out. Only pause the Supabase
+  project after that: the admin panel needs it too.
 
 ### Next year
 
-1. Add last year’s 440×660 chip to `public/images/pantone/`, named like
-   `2026_11-4201-TCX.webp`. The gallery is generated from that folder.
-2. Bump `CONTEST_YEAR` in `lib/config.ts` and deploy.
-3. Press “Open submissions” in the admin panel.
+1. Resume the Supabase project.
+2. Update dependencies: `pnpm update --latest`, `pnpm audit`, `pnpm test`.
+3. Add last year’s color to `lib/winners.ts`.
+4. Bump `CONTEST_YEAR` in `lib/config.ts` and deploy.
+5. Press “Open submissions” in the admin panel.
+
+## Colors
+
+The picker only offers colors which both sRGB screens can show and real
+surfaces can have, according to Pointer’s gamut. Every previous winner is among
+them. The database does not enforce this. Everybody starts from a random color,
+which is stored as the “primer” to see how it influences guesses.
 
 ## Security model
 
@@ -78,19 +93,20 @@ in. Prefer your own device over the one entrants use.
   can call one function, `submit_entry`, which validates the values and
   enforces the deadline, rate limits and a cap on entries. Admin functions
   check an allowlist and require a session younger than an hour.
-- **Contact details** are encrypted in the browser to the admin’s public key
+- **Names, contacts and color names** are encrypted in the browser to the admin’s public key
   (ECDH P-256, HKDF, AES-256-GCM) and bound to their row. Colors and
   timestamps are not encrypted.
 - **IP addresses** are hashed for rate limiting. Whoever has database access
   could reverse them. They are purged after a day of activity, and whenever you
   close submissions, set the color or delete all entries.
-- **Editing** needs a random 256-bit token. The database only has its hash.
+- **Editing** needs a random 256-bit token. The database only has its hash,
+  the token stays in the entrant’s browser along with their details.
 - **Admin sessions,** the private key and decrypted entries only exist in
   memory. They are dropped when the panel is closed or idle for 10 minutes.
-- **Shared devices.** The page is reloaded from scratch after each entrant, 5
-  idle minutes after submitting, or 15 idle minutes otherwise.
+- **Party mode** reloads the page from scratch after each guest, 5 idle minutes
+  after submitting, or 15 idle minutes otherwise.
 - **Pages** have a strict Content Security Policy with Trusted Types, and can
-  only talk to this Supabase project and Google Fonts.
+  only talk to this Supabase project.
 
 Known limits:
 
@@ -102,6 +118,9 @@ Known limits:
   `X-Forwarded-For`, can be forged.
 - Only accepted requests count towards the rate limits, since Postgres rolls
   the counter back together with a rejected one.
+- Safari may clear the storage of sites which were not visited for a week.
+  Such entrants can only enter again, which the panel flags.
+- Guests can leave party mode and see the entry of the phone’s owner.
 - Entries of 2026 were encrypted with a password which was public, so only the
   database protects them.
 
@@ -112,6 +131,7 @@ Known limits:
 | `pnpm start`  | Dev server on localhost                          |
 | `pnpm build`  | Production build in `dist/`                      |
 | `pnpm test`   | Types, linters, unit, database and browser tests |
+| `pnpm art`    | Paint the sketches, link preview and icons       |
 | `pnpm format` | Prettier                                         |
 
 Browser tests need `pnpm exec playwright install` once. They run the production
@@ -120,6 +140,9 @@ in-memory Postgres. Set `CHROMIUM_PATH` to use an installed Chromium.
 
 - `lib/` has logic without state, `stores/` has signals, `view/` connects them
   to the markup in `index.html`.
-- `lib/gamut.ts` is the fast color math for charts. `colorjs.io` handles
-  parsing and the other notations.
-- `build/` has Vite plugins for generated markup, CSP and the service worker.
+- `art/` paints the sketches. Each has a watercolor mask, which CSS fills with
+  any color, and an ink layer. List new ones in `lib/looks.ts` and
+  `view/look/index.css`.
+- `build/` has Vite plugins for placeholders, CSP and the service worker.
+- The fonts are subsets of Bodoni Moda and Jost, see
+  [their license](./view/base/fonts/OFL.txt).

@@ -1,0 +1,79 @@
+.winner {
+  display: grid;
+  flex: none;
+  grid-template-rows: minmax(0, 1fr) auto auto auto;
+  justify-items: center;
+  text-align: center;
+}
+
+.winner_colors {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 4px;
+
+  & > i {
+    width: 26px;
+    height: 12px;
+    background: var(--paint);
+    box-shadow: inset 0 0 0 1px var(--hairline);
+  }
+}
+
+.winner_year {
+  font: 400 20px / 1.1 var(--font-display);
+}
+
+.winner_name {
+  font: italic 15px / 1.2 var(--font-display);
+  white-space: pre-line;
+}
+
+.winner_code {
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--pencil);
+  letter-spacing: 0.06em;
+}
+
+.runway {
+  padding-left: calc(var(--left) - 12px);
+  outline-offset: -2px;
+
+  & .winner {
+    grid-template-columns: minmax(0, 1fr);
+
+    /* The last one in sight is cut off, which invites to scroll */
+    width: max(min(38vw, 150px), 30dvh - 60px);
+  }
+
+  & .look {
+    max-width: 100%;
+  }
+
+  & .winner_name {
+    min-height: 2.4em;
+  }
+
+  & .winner_code {
+    display: none;
+  }
+}
+
+.archive {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 26px 4px;
+
+  & .winner {
+    grid-template-rows: 160px;
+    align-content: start;
+  }
+
+  @media (width >= 860px) {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+
+    & .winner {
+      grid-template-rows: 230px;
+    }
+  }
+}

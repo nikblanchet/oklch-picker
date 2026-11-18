@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { minify, type Plugin, transformWithOxc } from 'vite'
 
 /** Only link previews and app installers need these. */
-const SKIP = ['sw.js', 'og-*.png', 'oklch-*.png']
+const SKIP = ['sw.js', 'og.jpg', 'icon-{192,512}.png']
 
 /** Compiles `sw.ts` with the list of files to make available offline. */
 export function serviceWorker(): Plugin {

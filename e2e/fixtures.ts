@@ -36,12 +36,6 @@ export const test = base.extend<{ backend: Backend; problems: string[] }>({
         loseNextResponse: false
       }
       await backend.db.pg.exec('delete from auth.sessions')
-      await context.route(/fonts\.g\w+\.com/, route =>
-        route.fulfill({
-          contentType: 'text/css',
-          headers: { 'access-control-allow-origin': '*' }
-        })
-      )
       await context.route('https://supabase.test/**', async route => {
         const request = route.request()
         const { pathname, searchParams } = new URL(request.url())
@@ -97,7 +91,10 @@ export const test = base.extend<{ backend: Backend; problems: string[] }>({
   problems: [
     async ({ browserName, page }, use) => {
       const problems: string[] = []
-      page.on('pageerror', error => problems.push(error.message))
+      page.on('pageerror', ({ message }) => {
+        // Only a notice that the rest is delivered in the next frame
+        if (!message.startsWith('ResizeObserver loop')) problems.push(message)
+      })
       page.on('console', message => {
         const text = message.text()
         // WebKit reports the internal markup of any <select>
@@ -116,25 +113,43 @@ export const test = base.extend<{ backend: Backend; problems: string[] }>({
 
 export { expect }
 
-export function oklch(page: Page) {
-  return page.getByLabel('OKLCH CSS code')
+export async function setHex(page: Page, hex: string) {
+  await page.getByRole('tab', { name: 'Hex' }).click()
+  await page.getByLabel('hex code').fill(hex)
+}
+
+export function getHex(page: Page) {
+  return page.evaluate(() =>
+    document.documentElement.style.getPropertyValue('--guess')
+  )
+}
+
+export async function click(page: Page, name: RegExp | string) {
+  await page
+    .getByRole('link', { name })
+    .or(page.getByRole('button', { name }))
+    .click()
 }
 
 export async function fillForm(page: Page, name: string, contact: string) {
-  await page.getByLabel('Your Name').fill(name)
-  await page.getByLabel('Contact Info').fill(contact)
+  await page.getByLabel('Your name').fill(name)
+  await page.getByLabel('Email or phone').fill(contact)
 }
 
+export const SUBMIT = /Submit my|Update the/
+
+/** From the form to the final screen. */
 export async function submit(page: Page, name: string, contact: string) {
   await fillForm(page, name, contact)
-  await page.getByRole('button', { name: /Submit your|Update the/ }).click()
-  await expect(page.getByText('Entry Submitted!')).toBeVisible()
+  await click(page, SUBMIT)
+  await expect(page.getByText('You’re in.')).toBeVisible()
 }
 
-export async function setAxis(page: Page, axis: string, value: string) {
-  const input = page.getByRole('spinbutton', { name: axis })
-  await input.fill(value)
-  await input.press('Enter')
+/** From the first screen to the form. */
+export async function pick(page: Page, hex?: string) {
+  await click(page, /Make my guess|PANIC/)
+  if (hex) await setHex(page, hex)
+  await click(page, 'This is the one')
 }
 
 export async function logIn(
@@ -175,7 +190,7 @@ export async function replayTyping(page: Page, field: Locator) {
 /** Resetting the form loads a new page. */
 export async function expectReset(page: Page, action: () => Promise<unknown>) {
   await Promise.all([page.waitForEvent('load'), action()])
-  await expect(page.getByLabel('Your Name')).toHaveValue('')
+  await expect(page.locator('#entry-name')).toHaveValue('')
 }
 
 export function storage(page: Page) {

@@ -1,7 +1,11 @@
 import { deepStrictEqual, equal, ok } from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { CONTACT_MAX_LENGTH, NAME_MAX_LENGTH } from '../lib/config.ts'
+import {
+  COLOR_NAME_MAX_LENGTH,
+  CONTACT_MAX_LENGTH,
+  NAME_MAX_LENGTH
+} from '../lib/config.ts'
 import {
   cleanPerson,
   contactKey,
@@ -30,6 +34,12 @@ test('cleans names', () => {
   equal(cleanPerson({ contact: '', name: '👩‍👩‍👧' }).name, '👩‍👩‍👧')
 })
 
+test('drops blank color names', () => {
+  const person = { contact: 'a', name: 'b' }
+  deepStrictEqual(cleanPerson({ ...person, colorName: ' \u{3164}' }), person)
+  equal(cleanPerson({ ...person, colorName: ' c\u{202E}' }).colorName, 'c')
+})
+
 test('sees through invisible characters', () => {
   ok(isBlank(' \u{200D}\u{3164}\u{AD}\u{2800}'))
   ok(!isBlank('🌈'))
@@ -55,6 +65,7 @@ test('goes all the way to the database and back', async () => {
   const color = { c: 0.1, h: 20, l: 0.5 }
   // The worst case for size: 3 bytes per character
   const person = {
+    colorName: '語'.repeat(COLOR_NAME_MAX_LENGTH),
     contact: '語'.repeat(CONTACT_MAX_LENGTH),
     name: '語'.repeat(NAME_MAX_LENGTH)
   }

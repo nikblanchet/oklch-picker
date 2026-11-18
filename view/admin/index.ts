@@ -1,6 +1,6 @@
 import { batch, computed, effect, signal } from '@preact/signals-core'
 
-import { formatOklch, type Lch, parseColor } from '../../lib/color.ts'
+import { formatOklch, type Lch, toHex } from '../../lib/color.ts'
 import { CONTEST_YEAR } from '../../lib/config.ts'
 import { contactKey } from '../../lib/contest.ts'
 import { importPrivateKey, type PrivateKey } from '../../lib/crypto.ts'
@@ -12,8 +12,8 @@ import {
   setCssVar,
   setText
 } from '../../lib/dom.ts'
-import { FORMATS } from '../../lib/formats.ts'
 import { type Entry, type Overview, readOverview } from '../../lib/overview.ts'
+import { parseColor } from '../../lib/parse.ts'
 import { rank, type Ranked } from '../../lib/score.ts'
 import { ApiError } from '../../lib/supabase.ts'
 import { explainError, publicKey, supabase } from '../../stores/backend.ts'
@@ -154,7 +154,7 @@ addEventListener('pagehide', () => {
 })
 
 function summarize(color: Lch): string {
-  return `${FORMATS.hex(color)} - ${describe(color)}, ${formatOklch(color)}`
+  return `${toHex(color)} - ${describe(color)}, ${formatOklch(color)}`
 }
 
 function formatDate(iso: string): string {
@@ -166,9 +166,10 @@ function renderEntry({ deltaE, entry, isWinner }: Ranked<Entry>): Node {
   const copies = entriesPerContact.value.get(person && contactKey(person))!
   const row = template.content.cloneNode(true) as DocumentFragment
   $('.entry', row).classList.toggle('is-winner', isWinner)
-  setCssVar('--swatch', FORMATS.hex(primer), $('.swatch.is-primer', row))
-  setCssVar('--swatch', FORMATS.hex(guess), $('.swatch.is-guess', row))
+  setCssVar('--paint', toHex(primer), $('.sample.is-primer', row))
+  setCssVar('--paint', toHex(guess), $('.sample.is-guess', row))
   setText(row, {
+    '.entry_color_name': person?.colorName ?? '',
     '.entry_contact': person?.contact ?? '',
     '.entry_copies': person && copies > 1 ? `⚠️ ${copies} entries` : '',
     '.entry_date':
@@ -179,6 +180,7 @@ function renderEntry({ deltaE, entry, isWinner }: Ranked<Entry>): Node {
     '.entry_name': person?.name ?? '🔒 No readable contact details',
     '.entry_primer': summarize(primer)
   })
+  $('.entry_named', row).hidden = !person?.colorName
   $('.entry_winner', row).hidden = !isWinner
   $('.entry_delete', row).addEventListener('click', () => {
     if (confirm(`Delete the entry of ${person?.name ?? id} forever?`)) {
@@ -204,9 +206,9 @@ effect(() => {
   )
   years.value = String(year.value)
   setCssVar(
-    '--swatch',
-    answer ? FORMATS.hex(answer) : 'transparent',
-    $('#admin-answer .swatch')
+    '--paint',
+    answer ? toHex(answer) : 'transparent',
+    $('#admin-answer .sample')
   )
   $('#admin-clear-answer').hidden = !answer
   $('#admin-toggle').hidden = Boolean(answer)
@@ -242,7 +244,7 @@ answerInput.addEventListener('input', () => {
 
 $('#admin-answer').addEventListener('submit', e => {
   e.preventDefault()
-  const { color } = parseColor(answerInput.value)!
+  const color = parseColor(answerInput.value)!
   const { c, h, l } = color
   if (confirm(`Set ${summarize(color)} and close submissions?`)) {
     void update({ args: { c, h, l }, name: 'admin_set_answer' })

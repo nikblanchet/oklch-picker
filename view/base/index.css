@@ -1,65 +1,70 @@
+@font-face {
+  font-family: 'Bodoni Poster';
+  font-display: swap;
+  src: url('./fonts/bodoni-96.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Bodoni Moda';
+  font-display: swap;
+  src: url('./fonts/bodoni.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Bodoni Moda';
+  font-style: italic;
+  font-display: swap;
+  src: url('./fonts/bodoni-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Jost';
+  font-display: swap;
+  src: url('./fonts/jost.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Jost';
+  font-weight: 500;
+  font-display: swap;
+  src: url('./fonts/jost-medium.woff2') format('woff2');
+}
+
+/* Neutral paper and ink: anything else would change how the guess looks */
 :root {
-  /* Both are kept in sync with the picker */
-  --current-color: oklch(0.7 0.1 250);
-  --current-hue: 250;
+  --paper: oklch(0.978 0.001 106);
+  --card: oklch(0.945 0.001 106);
+  --field: oklch(1 0 0);
+  --ink: oklch(0.2 0.008 308);
+  --pencil: oklch(0.5 0.01 308);
+  --hairline: oklch(0 0 0 / 10%);
+  --danger: oklch(0.45 0.18 17);
+  --font-display: 'Bodoni Moda', didot, 'Bodoni 72', georgia, serif;
+  --font-text: 'Jost', futura, 'Avenir Next', system-ui, sans-serif;
+  --left: max(20px, env(safe-area-inset-left));
+  --right: max(20px, env(safe-area-inset-right));
 
-  /* Safari 15 needs percents, which the build cannot add next to var() */
-  --accent: oklch(57% 0.18 var(--current-hue));
-  --surface-ui-accent: oklch(70% 0.17 var(--current-hue) / 20%);
-  --surface-primary: oklch(50% 0.18 var(--current-hue));
-  --surface-0: oklch(0.96 0.005 300);
-  --surface-1: oklch(1 0 0);
-  --surface-ui-regular: oklch(0.7 0.05 310 / 18%);
-  --surface-ui-warning: oklch(0.7 0.18 80 / 20%);
-  --surface-ui-danger: oklch(0.79 0.18 3 / 20%);
-  --surface-badge: oklch(0.32 0 0 / 85%);
-  --text-primary: oklch(0 0 0);
-  --text-secondary: oklch(0.54 0 0);
-  --text-note: oklch(0.85 0 0);
-  --text-inverted: oklch(1 0 0);
-  --danger: oklch(0.45 0.18 7);
-
-  /* Text which is readable on top of the current color */
-  --text-on-color: oklch(1 0 0);
-  --border-on-color: oklch(0 0 0 / 30%);
-  --text-outline:
-    0 0 4px oklch(0 0 0 / 80%), 0 0 8px oklch(0 0 0 / 60%),
-    1px 1px 2px oklch(0 0 0);
-  --unavailable-border: 1px dashed oklch(0.6 0.05 310 / 40%);
-  --radius: 12px;
-  --font-ui: 'Source Sans 3', sans-serif;
-  --font-code: 'Fira Code', monospace;
-
-  background: var(--current-color);
-
-  &.is-dark {
-    --border-on-color: oklch(1 0 0 / 60%);
-  }
-
-  &.is-light {
-    --text-on-color: oklch(0 0 0);
-    --text-outline: none;
-  }
+  background: var(--paper);
 }
 
 body {
-  font-family: var(--font-ui);
-  font-size: 19px;
-  line-height: 1.2;
-  color: var(--text-primary);
+  font: 17px / 1.4 var(--font-text);
+  color: var(--ink);
 }
 
 :focus-visible {
-  outline: var(--accent) solid 3px;
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
 }
 
-::selection {
-  color: var(--text-inverted);
-  background: var(--accent);
+[tabindex='-1']:is(h1, h2) {
+  outline: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  ::before {
     transition: none !important;
+    animation: none !important;
   }
 }

@@ -1,32 +1,48 @@
 .label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
-  font-size: 1.1rem;
-  font-weight: 500;
-  line-height: 16px;
+  display: grid;
+  gap: 4px;
 }
 
 .input {
   width: 100%;
-  padding: 10px 12px;
-  font-size: 1rem;
-  line-height: normal;
-  background: transparent;
-  border: 2px solid oklch(0.7 0 0 / 40%);
-  border-radius: 6px;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+  min-height: 50px;
+  padding: 10px 14px;
+  background: var(--field);
+  border: 1px solid var(--pencil);
 
-  &:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--surface-ui-accent);
+  &:focus-visible {
+    outline-offset: -1px;
   }
 
-  &:user-invalid {
+  &.is-fancy {
+    font: italic 21px var(--font-display);
+  }
+
+  &:user-invalid,
+  &[aria-invalid='true'] {
     border-color: var(--danger);
   }
+}
+
+.error {
+  min-height: 1.3em;
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--danger);
+}
+
+.sign_intro {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  & > .look {
+    height: clamp(120px, 24vh, 260px);
+    margin-left: -8px;
+  }
+}
+
+.done_author {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
