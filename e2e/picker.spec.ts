@@ -203,7 +203,7 @@ test('shows past winners from anywhere @mobile', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('#runway')).toContainText('Cloud Dancer')
   await click(page, 'Make my guess')
-  await click(page, 'See past winners')
+  await click(page, 'See colors of yesteryear')
   await expect(page.locator('#archive > li')).toHaveCount(WINNERS.length)
   const sizes = await page
     .locator('#archive .look')
