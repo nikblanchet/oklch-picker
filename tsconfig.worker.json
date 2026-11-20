@@ -5,5 +5,5 @@
     "types": [],
     "moduleDetection": "force"
   },
-  "include": ["sw.ts", "view/**/worker.ts"]
+  "include": ["sw.ts"]
 }

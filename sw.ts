@@ -5,11 +5,6 @@ declare const FILES: string[]
 
 const PREFIX = 'files-'
 const CURRENT = PREFIX + VERSION
-const FONTS = 'fonts'
-const FONT_ORIGINS = new Set([
-  'https://fonts.googleapis.com',
-  'https://fonts.gstatic.com'
-])
 const NAVIGATION_TIMEOUT_MS = 4000
 
 async function download(url: string): Promise<[string, Response]> {
@@ -33,7 +28,7 @@ async function activate(): Promise<void> {
   const previous = names.findLast(i => i.startsWith(PREFIX) && i !== CURRENT)
   await Promise.all(
     names
-      .filter(i => i !== CURRENT && i !== previous && i !== FONTS)
+      .filter(i => i !== CURRENT && i !== previous)
       .map(i => caches.delete(i))
   )
   await self.clients.claim()
@@ -76,15 +71,6 @@ async function loadFile(request: Request): Promise<Response> {
   )
 }
 
-async function loadFont(request: Request): Promise<Response> {
-  const cache = await caches.open(FONTS)
-  const cached = await cache.match(request)
-  if (cached) return cached
-  const response = await fetch(request)
-  if (response.ok) await cache.put(request, response.clone())
-  return response
-}
-
 self.addEventListener('install', e => {
   e.waitUntil(install())
 })
@@ -96,11 +82,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const { request } = e
   const { origin } = new URL(request.url)
-  if (request.method !== 'GET') return
-  if (origin === self.location.origin) {
-    const load = request.mode === 'navigate' ? loadPage : loadFile
-    e.respondWith(load(request))
-  } else if (FONT_ORIGINS.has(origin)) {
-    e.respondWith(loadFont(request).catch(() => Response.error()))
-  }
+  if (request.method !== 'GET' || origin !== self.location.origin) return
+  const load = request.mode === 'navigate' ? loadPage : loadFile
+  e.respondWith(load(request))
 })

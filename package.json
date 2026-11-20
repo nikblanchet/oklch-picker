@@ -10,6 +10,7 @@
   "scripts": {
     "start": "vite",
     "build": "vite build",
+    "art": "node art/render.mjs",
     "keygen": "node scripts/keygen.ts",
     "format": "prettier --write .",
     "test:types": "tsc --build",
@@ -22,15 +23,12 @@
   },
   "dependencies": {
     "@preact/signals-core": "^1.14.4",
-    "colorjs.io": "^0.7.1",
-    "delaunator": "^5.1.0",
-    "three": "~0.186.1"
+    "colorjs.io": "^0.7.1"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.10",
     "@playwright/test": "^1.64.0",
     "@types/node": "^24.9.1",
-    "@types/three": "~0.186.0",
     "oxlint": "^1.89.0",
     "oxlint-tsgolint": "^7.0.2004",
     "prettier": "^3.9.10",

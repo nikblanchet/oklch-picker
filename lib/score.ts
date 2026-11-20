@@ -16,34 +16,40 @@ export function deltaE(a: Lch, b: Lch): number {
 export interface Ranked<Entry> {
   deltaE: number | undefined
   entry: Entry
+  isLate: boolean
   isWinner: boolean
 }
 
 interface Contender {
   guess: Lch
+  guessedAt: string
   /** Nobody to hand the prize to, if it is missing. */
   person: object | undefined
-  updatedAt: string
 }
 
-/** Closest guess first. Ties share the win, the earliest one is on top. */
+/**
+ * Closest guess first. Ties share the win, the earliest one is on top.
+ * Colors which were chosen after the deadline go last and cannot win.
+ */
 export function rank<Entry extends Contender>(
   entries: readonly Entry[],
-  answer: Lch | undefined
+  answer: Lch | undefined,
+  closesAt?: string
 ): Ranked<Entry>[] {
-  if (!answer) {
-    return entries.map(entry => ({ deltaE: undefined, entry, isWinner: false }))
-  }
-  const scored = entries
-    .map(entry => ({ deltaE: deltaE(entry.guess, answer), entry }))
-    .sort(
-      (a, b) =>
-        a.deltaE - b.deltaE ||
-        Date.parse(a.entry.updatedAt) - Date.parse(b.entry.updatedAt)
-    )
-  const best = scored.find(i => i.entry.person)?.deltaE
-  return scored.map(i => ({
-    ...i,
-    isWinner: !!i.entry.person && i.deltaE === best
+  const deadline = closesAt ? Date.parse(closesAt) : Infinity
+  const scored = entries.map(entry => ({
+    deltaE: answer && deltaE(entry.guess, answer),
+    entry,
+    isLate: Date.parse(entry.guessedAt) > deadline
   }))
+  if (!answer) return scored.map(i => ({ ...i, isWinner: false }))
+  scored.sort(
+    (a, b) =>
+      Number(a.isLate) - Number(b.isLate) ||
+      a.deltaE! - b.deltaE! ||
+      Date.parse(a.entry.guessedAt) - Date.parse(b.entry.guessedAt)
+  )
+  const canWin = (i: (typeof scored)[number]) => !!i.entry.person && !i.isLate
+  const best = scored.find(canWin)?.deltaE
+  return scored.map(i => ({ ...i, isWinner: canWin(i) && i.deltaE === best }))
 }

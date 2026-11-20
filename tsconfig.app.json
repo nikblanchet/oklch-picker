@@ -1,6 +1,5 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": { "lib": ["es2022", "dom"], "types": ["vite/client"] },
-  "include": ["env.d.ts", "index.ts", "lib", "stores", "view"],
-  "exclude": ["**/worker.ts"]
+  "include": ["env.d.ts", "index.ts", "lib", "stores", "view"]
 }

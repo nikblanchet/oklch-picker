@@ -1,37 +1,26 @@
 import { computed, type ReadonlySignal, signal } from '@preact/signals-core'
 
-import {
-  isSameColor,
-  type Lch,
-  normalize,
-  randomColor,
-  round
-} from '../lib/color.ts'
-import { trackHistory } from '../lib/history.ts'
+import { clamp, toHex, wrapHue } from '../lib/color.ts'
+import { type Look, LOOKS, shuffle } from '../lib/looks.ts'
+import { DARKEST, LIGHTEST, type Pick, randomPick, toLch } from '../lib/real.ts'
 
-const state = signal(randomColor())
+const state = signal(randomPick())
 
-export const current: ReadonlySignal<Lch> = state
+export const pick: ReadonlySignal<Pick> = state
+export const color = computed(() => toLch(state.value))
+export const hex = computed(() => toHex(color.value))
 
-/** Separate signals, so views only repaint when their own axis changes. */
-export const axes = {
-  c: computed(() => state.value.c),
-  h: computed(() => state.value.h),
-  l: computed(() => state.value.l)
+/** Everybody sees the sketches in another order. */
+export const lineup = shuffle(LOOKS)
+
+/** The sketch which wears the color. */
+export const look = signal<Look>(lineup[0]!)
+
+export function withChange(change: Partial<Pick>): Pick {
+  const { h, l, s } = { ...state.peek(), ...change }
+  return { h: wrapHue(h), l: clamp(DARKEST, l, LIGHTEST), s: clamp(0, s, 1) }
 }
 
-export const colorHistory = trackHistory(state)
-
-export function setColor(color: Lch): void {
-  const next = normalize(color)
-  if (!isSameColor(next, state.peek())) state.value = next
-}
-
-export function setAxes({ c, h, l }: Partial<Lch>): void {
-  const value = state.peek()
-  setColor({
-    c: c === undefined ? value.c : round(c, 4),
-    h: h === undefined ? value.h : round(h, 2),
-    l: l === undefined ? value.l : round(l, 4)
-  })
+export function setPick(change: Partial<Pick>): void {
+  state.value = withChange(change)
 }

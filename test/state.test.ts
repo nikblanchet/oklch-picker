@@ -1,9 +1,8 @@
-import { signal } from '@preact/signals-core'
 import { deepStrictEqual, equal } from 'node:assert/strict'
-import { beforeEach, mock, test } from 'node:test'
+import { beforeEach, test } from 'node:test'
 
-import { loadDraft, saveDraft } from '../lib/draft.ts'
-import { trackHistory } from '../lib/history.ts'
+import { CONTEST_YEAR } from '../lib/config.ts'
+import { loadOwn, saveGuest, saveOwn, takeGuest } from '../lib/draft.ts'
 import { getHotkey } from '../lib/hotkeys.ts'
 
 class MemoryStorage {
@@ -20,33 +19,48 @@ class MemoryStorage {
 }
 
 beforeEach(() => {
-  Object.defineProperty(globalThis, 'sessionStorage', {
-    configurable: true,
-    value: new MemoryStorage()
-  })
-  mock.timers.reset()
+  for (const area of ['localStorage', 'sessionStorage']) {
+    Object.defineProperty(globalThis, area, {
+      configurable: true,
+      value: new MemoryStorage()
+    })
+  }
 })
 
+const KEY = `entry-${CONTEST_YEAR}`
 const COLOR = { c: 0.1, h: 20, l: 0.5 }
-const PERSON = { contact: 'a@example.com', name: 'A' }
+const PERSON = { colorName: 'B', contact: 'a@example.com', name: 'A' }
+const PICK = { h: 20, l: 0.5, s: 0.5 }
 const DRAFT = {
   attempted: undefined,
-  color: COLOR,
-  expiresAt: 300_000,
+  look: 'gown',
   person: PERSON,
-  primer: { ...COLOR, h: 200 },
+  pick: PICK,
+  primer: COLOR,
   submitted: {
     person: PERSON,
+    pick: PICK,
     primer: COLOR,
-    ticket: { id: 'id', token: 'token' }
+    ticket: { id: 'a', token: 'b' }
   }
 }
 
-test('restores drafts until they expire', () => {
-  saveDraft(DRAFT)
-  deepStrictEqual(loadDraft(299_000), DRAFT)
-  equal(loadDraft(301_000), undefined)
-  deepStrictEqual(Object.keys(sessionStorage), [])
+test('keeps the own entry of this year only', () => {
+  localStorage.setItem(`entry-${CONTEST_YEAR - 1}`, '{}')
+  saveOwn(DRAFT)
+  deepStrictEqual(loadOwn(), DRAFT)
+  deepStrictEqual(Object.keys(localStorage), [KEY])
+})
+
+test('restores drafts of guests once, until they expire', () => {
+  saveGuest(DRAFT, 300_000)
+  deepStrictEqual(takeGuest(299_000), { ...DRAFT, expiresAt: 300_000 })
+  equal(takeGuest(299_000), undefined)
+  for (const expiresAt of [-1, Infinity, 901_000]) {
+    saveGuest(DRAFT, expiresAt)
+    equal(takeGuest(0), undefined)
+    deepStrictEqual(Object.keys(sessionStorage), [])
+  }
 })
 
 test('ignores broken drafts', () => {
@@ -54,46 +68,16 @@ test('ignores broken drafts', () => {
     '{',
     '1',
     'null',
-    JSON.stringify({ ...DRAFT, color: { ...COLOR, l: null } }),
+    JSON.stringify({ ...DRAFT, pick: { ...DRAFT.pick, l: null } }),
+    JSON.stringify({ ...DRAFT, pick: { ...DRAFT.pick, s: 2 } }),
     JSON.stringify({ ...DRAFT, person: { name: 1 } }),
-    JSON.stringify({ ...DRAFT, expiresAt: Infinity }),
-    JSON.stringify({ ...DRAFT, expiresAt: 901_000 })
+    JSON.stringify({ ...DRAFT, person: { ...PERSON, colorName: {} } })
   ]) {
-    sessionStorage.setItem('draft', value)
-    equal(loadDraft(0), undefined)
+    localStorage.setItem(KEY, value)
+    equal(loadOwn(), undefined)
   }
-})
-
-test('undoes and redoes', () => {
-  mock.timers.enable({ apis: ['setTimeout'] })
-  const state = signal(0)
-  const history = trackHistory(state)
-  function change(...values: number[]): void {
-    for (const value of values) state.value = value
-    mock.timers.tick(100)
-  }
-
-  change(1, 2, 3)
-  change(4)
-  history.undo()
-  equal(state.value, 3)
-  history.undo()
-  history.undo()
-  equal(state.value, 0)
-  history.redo()
-  equal(state.value, 3)
-
-  // A change right after an undo is neither lost nor merged
-  state.value = 5
-  history.redo()
-  equal(state.value, 5)
-  history.undo()
-  equal(state.value, 3)
-
-  history.clear()
-  history.undo()
-  history.redo()
-  equal(state.value, 3)
+  localStorage.setItem(KEY, JSON.stringify({ ...DRAFT, look: 3 }))
+  equal(loadOwn()?.look, '')
 })
 
 test('reads hotkeys', () => {

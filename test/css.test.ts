@@ -2,8 +2,6 @@ import { deepStrictEqual } from 'node:assert/strict'
 import { globSync, readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
-import { AXES } from '../lib/config.ts'
-
 function find(files: string[], pattern: RegExp): Set<string> {
   const source = globSync(files)
     .map(file => readFileSync(file, 'utf8'))
@@ -12,7 +10,7 @@ function find(files: string[], pattern: RegExp): Set<string> {
 }
 
 const CSS = ['view/**/*.css']
-const MARKUP = ['*.html', 'reports/*.html', '{build,view}/**/*.ts']
+const MARKUP = ['*.html', 'view/**/*.ts']
 
 test('defines exactly the custom properties which are used', () => {
   const used = find(CSS, /var\(\s*(--[\w-]+)/g)
@@ -21,10 +19,7 @@ test('defines exactly the custom properties which are used', () => {
 })
 
 test('has no styles for missing elements', () => {
-  const styled = find(CSS, /\.([a-z][\w-]*)(?![\w-]*\.?(?:svg|css|"))/g)
-  // This one is toggled by hand from the console
-  styled.delete('admin-visible')
-  // And these come from a template
-  for (const axis of AXES) styled.delete(`is-${axis}`)
+  const styled = find(CSS, /\.([a-z][\w-]*)(?![\w-]*\.?(?:webp|woff2|css|"))/g)
+  for (const extension of ['webp', 'woff2']) styled.delete(extension)
   deepStrictEqual([...styled.difference(find(MARKUP, /([\w-]+)/g))], [])
 })

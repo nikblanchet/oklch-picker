@@ -26,6 +26,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Install browsers
+        timeout-minutes: 8
         run: pnpm exec playwright install --with-deps --only-shell
       - name: Run tests
         run: pnpm test

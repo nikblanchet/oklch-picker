@@ -2,230 +2,273 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Guess the %CONTEST_YEAR% Pantone Color of the Year</title>
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <title>
+      Contest: Guess the Pantone Color of the Year for %CONTEST_YEAR%
+    </title>
     <meta
       name="description"
-      content="Pick a color and guess the %CONTEST_YEAR% Pantone Color of the Year"
+      content="Pick one color. The closest guess wins."
     />
     <meta name="color-scheme" content="only light" />
-    <meta name="theme-color" content="#f2f1f4" />
+    <meta name="theme-color" content="#f8f8f7" />
+    <meta name="format-detection" content="telephone=no" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Color Guess" />
     <meta
       property="og:title"
-      content="Guess the %CONTEST_YEAR% Pantone Color of the Year"
+      content="Contest: Guess the Pantone Color of the Year for %CONTEST_YEAR%"
     />
-    <meta property="og:image" content="%SITE_ORIGIN%/og-oklch.png" />
-    <link rel="icon" href="/favicon.ico" sizes="32x32" />
-    <link rel="icon" href="./view/base/oklch.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon-oklch.png" />
-    <link rel="manifest" href="/oklch.webmanifest" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      id="fonts"
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&family=Fira+Code:wght@400&display=swap"
-      media="print"
-      crossorigin
+    <meta
+      property="og:description"
+      content="Pick one color. The closest guess wins."
     />
+    <meta property="og:image" content="%SITE_ORIGIN%/og.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/icon-48.png" />
+    <link rel="apple-touch-icon" href="/icon-180.png" />
+    <link rel="manifest" href="/app.webmanifest" />
     <link rel="stylesheet" href="./index.css" />
     <script type="module" src="./index.ts"></script>
   </head>
 
   <body>
-    <main class="layout">
-      <header class="card is-header">
-        <h1 class="header_title">
-          Guess the %CONTEST_YEAR% Pantone Color of the Year
-        </h1>
-        <ol class="header_steps">
-          <li>Enter your name and contact info</li>
-          <li>
-            Use the Hue, Chroma, and Lightness sliders to set your color. Narrow
-            screens will need to scroll down to see all 3 sliders.
-          </li>
-          <li>
-            Use the buttons at the bottom to see previous years' colors and to
-            submit your guess.
-          </li>
-        </ol>
-      </header>
+    <main>
+      <section id="start" class="screen is-start">
+        <header class="cover gutter">
+          <p class="caps cover_kicker">The annual contest</p>
+          <h1 class="cover_title" tabindex="-1">
+            <span class="cover_words">
+              Guess the
+              <span class="cover_name">Pantone Color of the Year</span>
+            </span>
+            <span class="cover_year">%CONTEST_YEAR%</span>
+          </h1>
+          <div class="cover_model"></div>
+          <p class="cover_line is-left">
+            <strong>Pick one color.</strong> The closest guess wins.
+          </p>
+          <p class="cover_line is-right">
+            <strong>Don’t dawdle.</strong> Entries close when Pantone announces
+            in early December.
+          </p>
+        </header>
+        <div class="start_past">
+          <div class="bar gutter">
+            <h2 class="unseen">Colors of yesteryear</h2>
+            <a class="caps link" href="#past">See colors of yesteryear</a>
+          </div>
+          <ol
+            id="runway"
+            class="rail runway"
+            tabindex="0"
+            aria-label="Colors of yesteryear"
+          ></ol>
+        </div>
+        <div class="stack gutter">
+          <a class="action" href="#pick">Make my guess</a>
+          <p id="party" class="note" hidden>
+            Party mode: this phone forgets every guest.
+            <button id="party-exit" class="link" type="button">Exit</button>
+          </p>
+        </div>
+      </section>
 
-      <section class="card is-entry">
-        <h2 class="card_title">My contact info</h2>
-        <!-- No autofill: it would suggest previous entrants on a shared device -->
-        <form id="entry" autocomplete="off">
+      <section id="past" class="screen is-past gutter" hidden>
+        <div class="bar">
+          <button id="past-back" class="caps link" type="button">Back</button>
+        </div>
+        <h2 class="title" tabindex="-1">
+          Every color <em class="title_echo">since the beginning</em>
+        </h2>
+        <ol id="archive" class="archive"></ol>
+        <a class="action" href="#pick">Make my guess</a>
+      </section>
+
+      <section id="pick" class="screen is-pick" hidden>
+        <div class="bar gutter">
+          <h2 class="unseen" tabindex="-1">Pick your color</h2>
+          <a class="caps link" href="#past">See colors of yesteryear</a>
+        </div>
+        <div class="stage">
+          <div id="looks" class="carousel is-hinting" aria-hidden="true"></div>
+          <div class="swatch"></div>
+          <button
+            id="look-previous"
+            class="arrow is-previous"
+            type="button"
+            aria-label="Previous look"
+          ></button>
+          <button
+            id="look-next"
+            class="arrow is-next"
+            type="button"
+            aria-label="Next look"
+          ></button>
+        </div>
+        <div class="picker gutter">
+          <label class="caps" for="hue">1 &nbsp;Slide to a color</label>
+          <div class="ribbon">
+            <canvas width="120" height="12"></canvas>
+            <input id="hue" type="range" min="0" max="359" autocomplete="off" />
+            <div class="ribbon_thumb"></div>
+          </div>
+          <div class="tabs" role="tablist">
+            <button
+              id="tab-shades"
+              class="caps"
+              type="button"
+              role="tab"
+              aria-controls="shades"
+            >
+              2 &nbsp;Tap a shade
+            </button>
+            <button
+              id="tab-tune"
+              class="caps"
+              type="button"
+              role="tab"
+              aria-controls="tune"
+            >
+              3 &nbsp;Fine-tune
+            </button>
+            <button
+              id="tab-exact"
+              class="caps"
+              type="button"
+              role="tab"
+              aria-controls="exact"
+            >
+              Hex
+            </button>
+          </div>
+          <div
+            id="shades"
+            class="panel shades"
+            role="tabpanel"
+            aria-labelledby="tab-shades"
+          ></div>
+          <div
+            id="tune"
+            class="panel tune"
+            role="tabpanel"
+            aria-labelledby="tab-tune"
+          ></div>
+          <div
+            id="exact"
+            class="panel exact"
+            role="tabpanel"
+            aria-labelledby="tab-exact"
+          >
+            <label class="label">
+              Know the hex code? Type it here.
+              <input
+                id="hex"
+                class="input"
+                maxlength="9"
+                autocapitalize="none"
+                autocomplete="off"
+                autocorrect="off"
+                spellcheck="false"
+                enterkeyhint="done"
+              />
+            </label>
+            <p id="hex-error" class="error" role="status"></p>
+          </div>
+          <a class="action" href="#sign">This is my guess</a>
+          <p id="color-status" class="unseen" role="status"></p>
+        </div>
+      </section>
+
+      <section id="sign" class="screen is-sign gutter" hidden>
+        <div class="bar">
+          <a class="caps link" href="#pick">Change color</a>
+          <button id="entry-restart" class="caps link" type="button" hidden>
+            Not you? Start over
+          </button>
+        </div>
+        <div class="sign_intro">
+          <div class="look is-chosen"></div>
+          <h2 class="title" tabindex="-1">Sign your work</h2>
+        </div>
+        <form id="entry" class="stack" novalidate>
           <label class="label">
-            Your Name:
+            Your name
             <input
               id="entry-name"
               class="input"
-              placeholder="Enter your name"
-              required
               maxlength="%NAME_MAX_LENGTH%"
-              enterkeyhint="next"
+              autocomplete="name"
               autocorrect="off"
               spellcheck="false"
+              enterkeyhint="next"
             />
           </label>
           <label class="label">
-            Contact Info (email or phone):
+            <span
+              >Email or phone, in case you win
+              <span class="muted">(optional)</span></span
+            >
             <input
               id="entry-contact"
               class="input"
-              placeholder="email@example.com or phone"
-              required
               maxlength="%CONTACT_MAX_LENGTH%"
-              enterkeyhint="done"
+              autocomplete="email"
               autocapitalize="none"
               autocorrect="off"
               spellcheck="false"
+              enterkeyhint="next"
             />
           </label>
+          <label class="label">
+            <span>Name your color <span class="muted">(optional)</span></span>
+            <input
+              id="entry-color"
+              class="input is-fancy"
+              maxlength="%COLOR_NAME_MAX_LENGTH%"
+              placeholder="Divorced Apricot"
+              autocomplete="off"
+              enterkeyhint="send"
+            />
+          </label>
+          <p id="entry-error" class="error" role="alert"></p>
+          <button id="entry-submit" class="action">Submit my guess</button>
+          <p class="note">Only the host can read your details.</p>
         </form>
-        <button id="entry-restart" class="dialog_button" type="button" hidden>
-          Not you? Start over
-        </button>
       </section>
 
-      <section class="card is-guess">
-        <h2 class="card_title">My color guess</h2>
-        <div class="sample is-srgb">
-          <div class="sample_reader" aria-live="polite"></div>
-          <div class="sample_normal"></div>
-          <div class="sample_compare">
-            <div class="sample_unavailable"></div>
-            <div class="sample_real"><div class="sample_note"></div></div>
-            <div class="sample_fallback">
-              <button
-                class="sample_note"
-                type="button"
-                title="Go to the fallback color"
-              >
-                fallback
-              </button>
-            </div>
-          </div>
+      <section id="done" class="screen is-done" hidden>
+        <header class="gutter">
+          <p class="caps done_author">By <bdi id="done-name"></bdi></p>
+          <h2 id="done-title" class="title" tabindex="-1" dir="auto"></h2>
+        </header>
+        <div class="stage">
+          <div class="look is-chosen"></div>
+          <div class="swatch"></div>
         </div>
-        <div class="code is-oklch">
-          <div class="field">
-            <kbd class="field_hotkey" aria-hidden="true">o</kbd>
-            <input
-              class="field_input"
-              aria-label="OKLCH CSS code"
-              aria-keyshortcuts="o"
-              autocomplete="off"
-              spellcheck="false"
-            />
-          </div>
-        </div>
-        <div class="code is-other">
-          <div class="field is-options">
-            <kbd class="field_hotkey" aria-hidden="true">r</kbd>
-            <input
-              class="field_input"
-              aria-keyshortcuts="r"
-              autocomplete="off"
-              spellcheck="false"
-            />
-            <div class="field_options">
-              <select
-                class="field_select"
-                aria-label="Change format"
-                autocomplete="off"
-              ></select>
-              <div class="field_button icon is-down"></div>
-            </div>
-          </div>
-          <div class="code_note is-paste">
-            Paste HEX/RGB/HSL to convert to OKLCH
-          </div>
-          <div class="code_note is-fallback" hidden>
-            Closest fallback (by chroma) in sRGB
-          </div>
-          <div class="code_note is-figma" hidden>
-            Use it in Figma with
-            <a
-              class="code_link"
-              href="https://help.figma.com/hc/en-us/articles/360039825114-Manage-color-profiles-in-design-files#h_01H6Q1C5DK2JMQ8QFQBKEQ6AM0"
-              target="_blank"
-              rel="noreferrer"
-              >P3 color profile</a
+        <div class="stack gutter">
+          <p>
+            You’re in. Yay! You’re gonna win!
+            <span id="done-later"
+              >Come back on this phone to change your guess until Pantone
+              announces.</span
             >
-          </div>
+          </p>
+          <a class="action is-quiet" href="#pick"
+            >PANIC SPIRAL!! Plz let me change the color!!</a
+          >
+          <button id="done-next" class="caps link" type="button">
+            Hand this phone to someone else
+          </button>
         </div>
-      </section>
-
-      %AXIS_CARDS%
-
-      <section class="card is-3d model is-mini">
-        <h2 class="card_title">3D (just for fun)</h2>
-        <canvas class="model_canvas"></canvas>
-        <div class="model_status" role="status"></div>
-        <button
-          id="open-3d"
-          class="button icon is-expand model_button"
-          type="button"
-          title="Open 3D in fullscreen"
-        ></button>
       </section>
     </main>
 
-    <footer class="actions">
-      <h2 class="actions_title">Do you like your color?</h2>
-      <p id="entry-error" class="actions_error" role="alert"></p>
-      <a class="action" href="/reports/pantone-colors-of-the-year.html"
-        >See previous years' colors</a
-      >
-      <button id="entry-submit" class="action is-submit" form="entry">
-        Submit your guess for %CONTEST_YEAR%
-      </button>
-      <button id="login-open" class="action is-admin" type="button">
-        This button is for Spice
-      </button>
-    </footer>
-
-    <dialog class="model is-full" aria-labelledby="model-title">
-      <h2 id="model-title">OKLCH 3D model</h2>
-      <canvas class="model_canvas"></canvas>
-      <div class="model_status" role="status"></div>
-      <form method="dialog">
-        <button
-          class="button icon is-cross model_button"
-          title="Back to color picker"
-        ></button>
-      </form>
-      <p class="model_note">
-        Drag to rotate • Scroll to zoom • Right button to move
-      </p>
-    </dialog>
-
-    <dialog
-      id="success"
-      class="success"
-      aria-labelledby="success-title"
-      closedby="none"
-    >
-      <h2 id="success-title">Entry Submitted!</h2>
-      <p>Thank you for participating!</p>
-      <div class="success_details">
-        <p><strong>Name:</strong> <bdi class="is-name"></bdi></p>
-        <p><strong>Contact:</strong> <bdi class="is-contact"></bdi></p>
-      </div>
-      <form method="dialog">
-        <button class="success_button is-done" value="done">
-          Yay! I'm gonna win! I wonder what the prize is?
-        </button>
-        <button class="success_button is-edit" value="edit">
-          PANIC SPIRAL!! I've changed my mind! Plz let me change the color!!
-        </button>
-      </form>
-    </dialog>
-
-    <dialog id="login" class="dialog is-login" aria-labelledby="login-title">
+    <dialog id="login" class="dialog" aria-labelledby="login-title">
       <form class="dialog_body">
         <h2 id="login-title">Admin Login</h2>
         <input
@@ -292,10 +335,29 @@
           ></button>
         </section>
 
+        <form id="admin-deadline" class="admin_box" autocomplete="off">
+          <label class="label">
+            <span>
+              <strong>Closing time</strong> in the time zone of this device. It
+              can be in the past. Colors chosen later cannot win.
+            </span>
+            <input
+              class="input"
+              type="datetime-local"
+              min="2000-01-01T00:00"
+              max="2999-12-31T23:59"
+              required
+            />
+          </label>
+          <div class="dialog_actions">
+            <button class="dialog_button">Set closing time</button>
+          </div>
+        </form>
+
         <form id="admin-answer" class="admin_box" autocomplete="off">
           <h3>Pantone’s Color</h3>
           <div class="admin_answer">
-            <div class="swatch"></div>
+            <div class="sample"></div>
             <p></p>
           </div>
           <input
@@ -345,18 +407,25 @@
 
     <template id="admin-entry">
       <li class="entry">
-        <div class="swatch is-primer" title="Primer Color"></div>
-        <div class="swatch is-guess" title="Guessed Color"></div>
+        <div class="sample is-primer" title="Primer Color"></div>
+        <div class="sample is-guess" title="Guessed Color"></div>
         <div class="entry_details">
           <h4 class="entry_title">
             <bdi class="entry_name"></bdi>
             <span class="entry_winner">🏆 WINNER</span>
+            <span class="entry_late">LATE</span>
           </h4>
           <p><strong>Primer:</strong> <span class="entry_primer"></span></p>
           <p><strong>Guessed:</strong> <span class="entry_guess"></span></p>
+          <p class="entry_named">
+            <strong>Named:</strong> <bdi class="entry_color_name"></bdi>
+          </p>
           <p>
             <strong>Contact:</strong> <bdi class="entry_contact"></bdi>
             <strong class="entry_copies"></strong>
+          </p>
+          <p class="entry_edited">
+            <strong>⚠️ Details were changed after closing</strong>
           </p>
           <p><strong>Submitted:</strong> <span class="entry_date"></span></p>
           <div class="admin_row">
@@ -366,6 +435,16 @@
             </button>
           </div>
         </div>
+      </li>
+    </template>
+
+    <template id="winner">
+      <li class="winner">
+        <div class="look"></div>
+        <div class="winner_colors"></div>
+        <h3 class="winner_year"></h3>
+        <p class="winner_name"></p>
+        <p class="winner_code"></p>
       </li>
     </template>
   </body>

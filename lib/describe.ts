@@ -11,7 +11,7 @@ const HUES: Scale = [
   [115, 'yellow'],
   [135, 'lime'],
   [175, 'green'],
-  [215, 'cyan'],
+  [215, 'teal'],
   [280, 'blue'],
   [315, 'purple'],
   [345, 'magenta'],
@@ -44,14 +44,22 @@ function lookup(scale: Scale, value: number): string {
 export function describe({ c, h, l }: Lch): string {
   if (c < ACHROMATIC && l < 0.2) return 'black'
   if (c < ACHROMATIC && l > 0.9) return 'white'
+  const hue = describeHue(h)
+  const isBrown = hue === 'orange' && l < 0.62 && c < 0.13
   const words =
     c < ACHROMATIC
       ? [lookup(LIGHTNESS, l), 'gray']
-      : [lookup(LIGHTNESS, l), lookup(CHROMA, c), lookup(HUES, h % 360)]
+      : [lookup(LIGHTNESS, l), lookup(CHROMA, c), isBrown ? 'brown' : hue]
   return words.filter(Boolean).join(' ')
 }
 
-/** Too light for white text, even with an outline. */
-export function isLight({ l }: Lch): boolean {
-  return l > 0.8
+export function describeHue(h: number): string {
+  return lookup(HUES, ((h % 360) + 360) % 360)
+}
+
+/** The next hue name in the given direction around the color wheel. */
+export function neighborHue(h: number, direction: -1 | 1): string {
+  let next = h
+  while (describeHue(next) === describeHue(h)) next += direction
+  return describeHue(next)
 }

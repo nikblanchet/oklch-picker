@@ -1,4 +1,10 @@
-import { deepStrictEqual, equal, ok, rejects } from 'node:assert/strict'
+import {
+  deepStrictEqual,
+  equal,
+  notEqual,
+  ok,
+  rejects
+} from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { afterEach, beforeEach, test } from 'node:test'
 
@@ -8,6 +14,7 @@ import {
   createDatabase,
   type Database,
   MIGRATION,
+  MIGRATIONS,
   STRANGER_ID
 } from './database.ts'
 
@@ -84,6 +91,7 @@ test('only lets admins use admin functions', async () => {
     admin_delete_entries: { ...YEAR, entry_id: null },
     admin_overview: YEAR,
     admin_set_answer: { ...YEAR, c: 0, h: 0, l: 0 },
+    admin_set_deadline: { ...YEAR, deadline: '2020-01-01T00:00:00Z' },
     admin_set_open: { ...YEAR, is_open: false }
   }
   for (const [name, args] of Object.entries(calls)) {
@@ -199,6 +207,45 @@ test('tells IPv4 clients behind an IPv6 proxy apart', async () => {
     'select distinct client_hash from contest.recent_requests'
   )
   equal(rows.length, 2)
+})
+
+test('sets the deadline to any moment', async () => {
+  const set = (deadline: null | string, year = YEAR) =>
+    db.rpc(ADMIN, 'admin_set_deadline', { ...year, deadline })
+  await submit(entry())
+  await set('2100-01-01T00:00:00Z')
+  await submit(entry())
+  await db.rpc(ADMIN, 'admin_set_answer', { ...YEAR, c: 0, h: 0, l: 0 })
+  await rejects(set('2100-01-01T00:00:00Z'), /answer_is_set/)
+  await set('2020-01-01T00:00:00Z')
+  await db.rpc(ADMIN, 'admin_set_answer', { ...YEAR, c: 0, h: 0, l: 1 })
+  await db.rpc(ADMIN, 'admin_set_open', { ...YEAR, is_open: false })
+  equal(Date.parse(String((await contest())['closes_at'])), 1_577_836_800_000)
+  await rejects(submit(entry()), /contest_closed/)
+  equal((await overview()).entries.length, 2)
+
+  await rejects(set(null), /invalid_deadline/)
+  await rejects(set('infinity'), /invalid_deadline/)
+  await rejects(set('2020-01-01', { contest_year: 1999 }), /unknown_year/)
+})
+
+test('tracks when the color was last changed', async () => {
+  const args = entry()
+  const times = async () => {
+    const [row] = (await overview()).entries
+    return [row!['guessed_at'], row!['updated_at']]
+  }
+  await submit(args)
+  const [first] = await times()
+  // Repeating the first migration must not stop the tracking
+  await db.pg.exec(MIGRATIONS[0]!)
+  await submit({ ...args, sealed: 'v2.typo' })
+  const [same, edited] = await times()
+  equal(same, first)
+  notEqual(edited, first)
+  await submit({ ...args, guess_h: 123 })
+  const [changed, updated] = await times()
+  equal(changed, updated)
 })
 
 test('starts a new year', async () => {

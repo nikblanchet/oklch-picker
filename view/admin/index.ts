@@ -1,8 +1,8 @@
 import { batch, computed, effect, signal } from '@preact/signals-core'
 
-import { formatOklch, type Lch, parseColor } from '../../lib/color.ts'
+import { formatOklch, type Lch, toHex } from '../../lib/color.ts'
 import { CONTEST_YEAR } from '../../lib/config.ts'
-import { contactKey } from '../../lib/contest.ts'
+import { contactKey, isBlank, nameKey, type Person } from '../../lib/contest.ts'
 import { importPrivateKey, type PrivateKey } from '../../lib/crypto.ts'
 import { describe } from '../../lib/describe.ts'
 import {
@@ -12,8 +12,13 @@ import {
   setCssVar,
   setText
 } from '../../lib/dom.ts'
-import { FORMATS } from '../../lib/formats.ts'
-import { type Entry, type Overview, readOverview } from '../../lib/overview.ts'
+import {
+  type Entry,
+  LEGACY_YEAR,
+  type Overview,
+  readOverview
+} from '../../lib/overview.ts'
+import { parseColor } from '../../lib/parse.ts'
 import { rank, type Ranked } from '../../lib/score.ts'
 import { ApiError } from '../../lib/supabase.ts'
 import { explainError, publicKey, supabase } from '../../stores/backend.ts'
@@ -35,23 +40,30 @@ const year = signal(CONTEST_YEAR as number)
 const contest = computed(() =>
   overview.value.contests.find(i => i.year === year.value)
 )
-const ranking = computed(() =>
-  rank(overview.value.entries, contest.value?.answer)
+/** The 2026 site did not track edits, so nobody can be called late. */
+const cutoff = computed(() =>
+  year.value === LEGACY_YEAR ? undefined : contest.value?.closesAt
 )
-const entriesPerContact = computed(() => {
-  const counts = new Map<string | undefined, number>()
-  for (const { person } of overview.value.entries) {
-    const contact = person && contactKey(person)
-    counts.set(contact, (counts.get(contact) ?? 0) + 1)
-  }
-  return counts
-})
+const ranking = computed(() =>
+  rank(overview.value.entries, contest.value?.answer, cutoff.value)
+)
+const countCopies = [nameKey, contactKey].map(getKey =>
+  computed(() => {
+    const counts = new Map<string, number>()
+    for (const { person } of overview.value.entries) {
+      const key = person && getKey(person)
+      if (key) counts.set(key, (counts.get(key) ?? 0) + 1)
+    }
+    return (person: Person) => counts.get(getKey(person)) ?? 0
+  })
+)
 
 const dialog = $<HTMLDialogElement>('#admin')
 const body = $('.dialog_body', dialog)
 const error = $('[role=alert]', dialog)
 const years = $<HTMLSelectElement>('#admin-year')
 const answerInput = $<HTMLInputElement>('#admin-answer input')
+const deadlineInput = $<HTMLInputElement>('#admin-deadline input')
 const template = $<HTMLTemplateElement>('#admin-entry')
 
 async function fetchOverview(
@@ -154,32 +166,57 @@ addEventListener('pagehide', () => {
 })
 
 function summarize(color: Lch): string {
-  return `${FORMATS.hex(color)} - ${describe(color)}, ${formatOklch(color)}`
+  return `${toHex(color)} - ${describe(color)}, ${formatOklch(color)}`
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString()
+  return new Date(iso).toLocaleString(undefined, { timeZoneName: 'short' })
 }
 
-function renderEntry({ deltaE, entry, isWinner }: Ranked<Entry>): Node {
-  const { createdAt, guess, id, person, primer, updatedAt } = entry
-  const copies = entriesPerContact.value.get(person && contactKey(person))!
+/** Such as `2026-12-01T09:00`, in the time zone of this device. */
+function toLocalInput(iso: string): string {
+  const date = new Date(iso)
+  const local = date.getTime() - date.getTimezoneOffset() * 60_000
+  return Number.isNaN(local) ? '' : new Date(local).toISOString().slice(0, 16)
+}
+
+function renderEntry({ deltaE, entry, isLate, isWinner }: Ranked<Entry>): Node {
+  const { createdAt, guess, guessedAt, id, person, primer, updatedAt } = entry
+  const [names = 0, contacts = 0] = person
+    ? countCopies.map(i => i.value(person))
+    : []
   const row = template.content.cloneNode(true) as DocumentFragment
   $('.entry', row).classList.toggle('is-winner', isWinner)
-  setCssVar('--swatch', FORMATS.hex(primer), $('.swatch.is-primer', row))
-  setCssVar('--swatch', FORMATS.hex(guess), $('.swatch.is-guess', row))
+  setCssVar('--paint', toHex(primer), $('.sample.is-primer', row))
+  setCssVar('--paint', toHex(guess), $('.sample.is-guess', row))
   setText(row, {
-    '.entry_contact': person?.contact ?? '',
-    '.entry_copies': person && copies > 1 ? `⚠️ ${copies} entries` : '',
-    '.entry_date':
-      formatDate(createdAt) +
-      (updatedAt === createdAt ? '' : `, edited ${formatDate(updatedAt)}`),
+    '.entry_color_name': person?.colorName ?? '',
+    '.entry_contact':
+      person && isBlank(person.contact) ? 'Not given' : (person?.contact ?? ''),
+    '.entry_copies': [
+      names > 1 && `⚠️ ${names} entries have this name`,
+      contacts > 1 && `⚠️ ${contacts} entries have this contact`
+    ]
+      .filter(Boolean)
+      .join(' '),
+    '.entry_date': [
+      formatDate(createdAt),
+      guessedAt !== createdAt && `color changed ${formatDate(guessedAt)}`,
+      updatedAt !== guessedAt && `details edited ${formatDate(updatedAt)}`
+    ]
+      .filter(Boolean)
+      .join(', '),
     '.entry_delta': deltaE === undefined ? '' : `Delta-E: ${deltaE.toFixed(2)}`,
     '.entry_guess': summarize(guess),
-    '.entry_name': person?.name ?? '🔒 No readable contact details',
+    '.entry_name': person?.name ?? '🔒 No readable details',
     '.entry_primer': summarize(primer)
   })
+  $('.entry_named', row).hidden = !person?.colorName
   $('.entry_winner', row).hidden = !isWinner
+  $('.entry_late', row).hidden = !isLate
+  // An entry can change hands this way
+  $('.entry_edited', row).hidden =
+    isLate || !(Date.parse(updatedAt) > Date.parse(cutoff.value ?? ''))
   $('.entry_delete', row).addEventListener('click', () => {
     if (confirm(`Delete the entry of ${person?.name ?? id} forever?`)) {
       void update({ args: { entry_id: id }, name: 'admin_delete_entries' })
@@ -192,8 +229,11 @@ effect(() => {
   $('#admin-entries').replaceChildren(...ranking.value.map(renderEntry))
   $('#admin-empty').hidden = ranking.value.length > 0
   const { skipped } = overview.value
+  const late = ranking.value.filter(i => i.isLate).length
   $('#admin-count').textContent =
-    ranking.value.length + (skipped ? `, ${skipped} malformed skipped` : '')
+    ranking.value.length +
+    (late ? `, ${late} late` : '') +
+    (skipped ? `, ${skipped} malformed skipped` : '')
 })
 
 effect(() => {
@@ -204,20 +244,22 @@ effect(() => {
   )
   years.value = String(year.value)
   setCssVar(
-    '--swatch',
-    answer ? FORMATS.hex(answer) : 'transparent',
-    $('#admin-answer .swatch')
+    '--paint',
+    answer ? toHex(answer) : 'transparent',
+    $('#admin-answer .sample')
   )
+  $('#admin-deadline').hidden = year.value === LEGACY_YEAR
+  deadlineInput.value = closesAt ? toLocalInput(closesAt) : ''
   $('#admin-clear-answer').hidden = !answer
   $('#admin-toggle').hidden = Boolean(answer)
   setText(dialog, {
     '#admin-answer p': answer ? summarize(answer) : 'Not set',
     '#admin-set-answer': `Set as Pantone ${year.value}`,
     '#admin-status': !isOpen
-      ? 'Submissions are closed'
+      ? `Submissions are closed${closesAt ? ` as of ${formatDate(closesAt)}` : ''}`
       : closesAt
         ? `Submissions are open until ${formatDate(closesAt)}`
-        : 'Submissions are open, no deadline is set',
+        : 'Submissions are open without a deadline',
     '#admin-toggle': isOpen ? 'Close submissions' : 'Open submissions'
   })
 })
@@ -242,11 +284,25 @@ answerInput.addEventListener('input', () => {
 
 $('#admin-answer').addEventListener('submit', e => {
   e.preventDefault()
-  const { color } = parseColor(answerInput.value)!
+  const color = parseColor(answerInput.value)!
   const { c, h, l } = color
   if (confirm(`Set ${summarize(color)} and close submissions?`)) {
     void update({ args: { c, h, l }, name: 'admin_set_answer' })
   }
+})
+
+$('#admin-deadline').addEventListener('submit', e => {
+  e.preventDefault()
+  const deadline = new Date(deadlineInput.value)
+  const { answer, closesAt, isOpen } = contest.peek() ?? {}
+  // The field has no seconds, so this would move the deadline
+  if (closesAt && deadlineInput.value === toLocalInput(closesAt)) return
+  const isReopening = !isOpen && !answer && deadline.getTime() > Date.now()
+  if (isReopening && !confirm('This opens submissions again. Continue?')) return
+  void update({
+    args: { deadline: deadline.toISOString() },
+    name: 'admin_set_deadline'
+  })
 })
 
 onClick('#admin-clear-answer', () =>

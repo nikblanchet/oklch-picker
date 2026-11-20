@@ -1,43 +1,67 @@
-import { randomColor } from '../../lib/color.ts'
+import { effect } from '@preact/signals-core'
+
 import { CONTEST_YEAR } from '../../lib/config.ts'
 import {
   cleanPerson,
   countMatches,
   createTicket,
   isBlank,
+  nameKey,
   type Person,
   submitEntry
 } from '../../lib/contest.ts'
-import { $, idleTimer, setText, whileBusy } from '../../lib/dom.ts'
+import { $, idleTimer, whileBusy } from '../../lib/dom.ts'
 import {
-  clearDraft,
+  clearGuest,
+  clearOwn,
   type Draft,
   getIdleTimeout,
-  loadDraft,
-  saveDraft,
-  type Submitted
+  loadOwn,
+  saveGuest,
+  saveOwn,
+  type Submitted,
+  takeGuest
 } from '../../lib/draft.ts'
 import { explainError, publicKey, supabase } from '../../stores/backend.ts'
-import { colorHistory, current, setColor } from '../../stores/current.ts'
+import { color, lineup, look, pick, setPick } from '../../stores/current.ts'
+import {
+  isParty,
+  readParty,
+  redirect,
+  route,
+  setParty
+} from '../../stores/route.ts'
 
-const REQUIRED = 'Please fill this in'
+const PARTY_URL = '/?party'
 
-const layout = $('.layout')
+const main = $('main')
 const form = $<HTMLFormElement>('#entry')
 const name = $<HTMLInputElement>('#entry-name')
 const contact = $<HTMLInputElement>('#entry-contact')
+const colorName = $<HTMLInputElement>('#entry-color')
 const submit = $<HTMLButtonElement>('#entry-submit')
 const submitLabel = submit.textContent
 const error = $('#entry-error')
-const success = $<HTMLDialogElement>('#success')
 
-const draft = loadDraft()
-let primer = draft?.primer ?? current.peek()
+const leftover = takeGuest()
+const guest = isParty ? leftover : undefined
+const draft = isParty ? guest : loadOwn()
+let primer = draft?.primer ?? color.peek()
 let { attempted, submitted }: Partial<Draft> = draft ?? {}
 let isWiped = false
+let stored = JSON.stringify(draft)
+
+/** Another tab may hold the ticket by now. */
+function isOutdated(): boolean {
+  return !isParty && (readParty() || stored !== JSON.stringify(loadOwn()))
+}
 
 function readPerson(): Person {
-  return cleanPerson({ contact: contact.value, name: name.value })
+  return cleanPerson({
+    colorName: colorName.value,
+    contact: contact.value,
+    name: name.value
+  })
 }
 
 /** The entry which the details in the form seem to belong to. */
@@ -45,86 +69,114 @@ function findEdited(): Submitted | undefined {
   const count = (i?: Submitted) =>
     i ? countMatches(i.person, readPerson()) : 0
   const best = count(attempted) > count(submitted) ? attempted : submitted
-  return count(best) > 0 ? best : undefined
+  if (count(best) > 0) return best
+  // On the own phone, it is rather the owner who is fixing both fields
+  return isParty ? undefined : (submitted ?? attempted)
 }
 
 /** Make it obvious whose entry is about to be replaced. */
-function showMode(): void {
-  const edited = findEdited()
+function show(): void {
   submit.textContent =
-    submitted && edited?.ticket.id === submitted.ticket.id
+    submitted && findEdited()?.ticket.id === submitted.ticket.id
       ? `Update the guess of ${submitted.person.name}`
       : submitLabel
   $('#entry-restart').hidden = !submitted && !attempted
-}
-
-function validate(): void {
-  const person = readPerson()
-  name.setCustomValidity(isBlank(person.name) ? REQUIRED : '')
-  contact.setCustomValidity(isBlank(person.contact) ? REQUIRED : '')
+  const title = submitted?.person.colorName
+  $('#done-name').textContent = submitted?.person.name ?? ''
+  $('#done-title').textContent = title ?? 'Your guess is in'
+  $('#done-title').classList.toggle('is-named', Boolean(title))
 }
 
 function wipe(): void {
   isWiped = true
   attempted = submitted = undefined
   form.reset()
-  showMode()
-  setText(success, { '.is-contact': '', '.is-name': '' })
+  show()
+}
+
+function leave(url: string, cleanup?: Promise<unknown>): void {
+  wipe()
+  clearGuest()
+  document.body.hidden = true
+  void Promise.resolve(cleanup).finally(() => {
+    location.replace(url)
+  })
 }
 
 /**
- * Leave no trace of the previous entrant. Only a new page drops everything,
- * such as the text undo history which could type their name back in.
+ * Leave no trace of a guest. Only a new page drops everything, such as the
+ * text undo history which could type their name back in.
  */
 export function reset(cleanup?: Promise<unknown>): void {
-  wipe()
-  clearDraft()
-  setColor(randomColor())
-  document.body.hidden = true
-  void Promise.resolve(cleanup).finally(() => {
-    location.replace('/')
-  })
+  if (!isParty) save()
+  leave(isParty ? PARTY_URL : '/', cleanup)
 }
 
 /** Somebody walked away from a shared device. */
 const abandoned = idleTimer(reset)
 
 function watchIdle(): void {
-  abandoned.start(getIdleTimeout(submitted))
+  if (isParty) abandoned.start(getIdleTimeout(submitted))
+}
+
+function save(): void {
+  if (isWiped || isOutdated()) return
+  const state = {
+    attempted,
+    look: look.peek().name,
+    person: readPerson(),
+    pick: pick.peek(),
+    primer,
+    submitted
+  }
+  if (isParty) {
+    const latest = Date.now() + getIdleTimeout(submitted)
+    saveGuest(state, Math.min(abandoned.deadline, latest))
+  } else {
+    saveOwn(state)
+    stored = JSON.stringify(loadOwn())
+  }
 }
 
 if (draft) {
   name.value = draft.person.name
   contact.value = draft.person.contact
-  setColor(draft.color)
-  colorHistory.clear()
-  clearDraft()
-  showMode()
-  validate()
-  abandoned.start(getIdleTimeout(submitted), draft.expiresAt)
+  colorName.value = draft.person.colorName ?? ''
+  setPick(draft.pick)
+  look.value = lineup.find(i => i.name === draft.look) ?? look.peek()
+  if (guest) abandoned.start(getIdleTimeout(submitted), guest.expiresAt)
+  if (submitted && route.peek() === 'start') redirect('done')
 }
-addEventListener('pointerdown', watchIdle, { once: true })
-// Otherwise the letters of a name would trigger hotkeys
-name.focus({ preventScroll: true })
+show()
 
-function save(): void {
-  if (isWiped) return
-  const [color, person] = [current.peek(), readPerson()]
-  const latest = Date.now() + getIdleTimeout(submitted)
-  const expiresAt = Math.min(abandoned.deadline, latest)
-  saveDraft({ attempted, color, expiresAt, person, primer, submitted })
+if (isParty) {
+  for (const input of [name, contact]) input.autocomplete = 'off'
+  $('#done-later').hidden = true
+  addEventListener('pointerdown', watchIdle, { once: true })
 }
+
+// The final screen only ever shows the color which was submitted
+effect(() => {
+  if (route.value !== 'done') return
+  if (submitted) {
+    setPick(submitted.pick)
+  } else {
+    redirect('start')
+  }
+})
 
 // Phones close background tabs without a warning
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     save()
+  } else if (isOutdated()) {
+    reset()
   } else if (!isWiped) {
-    clearDraft()
+    clearGuest()
   }
 })
-// Survive reloads and visits to the gallery, but never in the browser’s
-// back-forward cache, where nothing would expire.
+// Survive reloads, but never in the browser’s back-forward cache, where
+// nothing would expire.
 addEventListener('pagehide', () => {
   save()
   wipe()
@@ -134,45 +186,61 @@ addEventListener('pageshow', e => {
   if (e.persisted) location.reload()
 })
 
-form.addEventListener('input', () => {
-  watchIdle()
-  showMode()
-  validate()
+addEventListener('storage', () => {
+  if (!document.hidden && !submit.disabled && isOutdated()) reset()
 })
 
-// People fill in the form first: Enter must not submit an untouched color
+form.addEventListener('input', () => {
+  watchIdle()
+  show()
+  error.textContent = ''
+})
+
 form.addEventListener('keydown', e => {
   if (e.key !== 'Enter' || e.isComposing) return
+  const next = new Map([
+    [name, contact],
+    [contact, colorName]
+  ]).get(e.target as HTMLInputElement)
+  if (!next) return
   e.preventDefault()
-  if (e.target === name) {
-    contact.focus()
-  } else {
-    contact.blur()
-  }
+  next.focus()
 })
 
 /** On a shared device somebody may press “edit” and walk away. */
 function mayReplace({ person }: Submitted): boolean {
+  // A name alone is only enough on the own phone
+  const isSame = isBlank(person.contact)
+    ? !isParty && nameKey(person) === nameKey(readPerson())
+    : countMatches(person, readPerson()) === 2
   return (
-    countMatches(person, readPerson()) === 2 ||
+    isSame ||
     confirm(
-      `Are you ${person.name}, ${person.contact}? OK replaces that guess, Cancel adds a new one.`
+      `Are you ${person.name}${person.contact && ` (${person.contact})`}? OK replaces that guess. Cancel adds a new one, and the earlier guess can no longer be changed.`
     )
   )
 }
 
 async function send(): Promise<void> {
+  if (isOutdated()) {
+    const fresh = loadOwn()
+    attempted = fresh?.attempted ?? attempted
+    submitted = fresh?.submitted ?? submitted
+    stored = JSON.stringify(fresh)
+  }
   const edited = findEdited()
-  const guess = current.peek()
+  const guess = color.peek()
   // Reusing the ticket makes this an edit, or a safe retry after an error
   attempted = {
     ...(edited && mayReplace(edited)
       ? edited
       : { primer, ticket: createTicket() }),
-    person: readPerson()
+    person: readPerson(),
+    pick: pick.peek()
   }
   // Whoever takes over the device starts from here
   primer = guess
+  if (!isParty) save()
   await submitEntry(supabase, publicKey, {
     ...attempted,
     guess,
@@ -181,18 +249,28 @@ async function send(): Promise<void> {
   if (isWiped) return
   submitted = attempted
   watchIdle()
-  setColor(guess)
-  const { person } = submitted
-  setText(success, { '.is-contact': person.contact, '.is-name': person.name })
+  // Nothing another tab has saved meanwhile is more important
+  stored = JSON.stringify(loadOwn())
+  if (!isParty) save()
+}
+
+function validate(): boolean {
+  const isMissing = isBlank(readPerson().name)
+  name.setAttribute('aria-invalid', String(isMissing))
+  error.textContent = isMissing ? 'Add your name.' : ''
+  if (isMissing) name.focus()
+  return !isMissing
 }
 
 async function onSubmit(): Promise<void> {
-  error.textContent = ''
-  layout.inert = true
+  if (submit.disabled || !validate()) return
+  main.inert = true
   try {
     await whileBusy(submit, 'Submitting…', send)
-    success.returnValue = ''
-    success.showModal()
+    main.inert = false
+    show()
+    if (submitted) setPick(submitted.pick)
+    redirect('done')
   } catch (cause) {
     error.textContent = explainError(
       cause,
@@ -201,8 +279,8 @@ async function onSubmit(): Promise<void> {
         : 'Entries can only be encrypted when the site is opened via HTTPS.'
     )
   } finally {
-    layout.inert = false
-    showMode()
+    main.inert = false
+    show()
   }
 }
 
@@ -211,14 +289,22 @@ form.addEventListener('submit', e => {
   void onSubmit()
 })
 
-// One of the two buttons has to be chosen, as `closedby` says in new browsers
-success.addEventListener('cancel', e => {
-  e.preventDefault()
+// The owner’s entry stays on the phone for later
+$('#done-next').addEventListener('click', () => {
+  setParty(true)
+  leave(PARTY_URL)
 })
-success.addEventListener('close', () => {
-  if (success.returnValue !== 'edit') reset()
+
+$('#party-exit').addEventListener('click', () => {
+  setParty(false)
+  leave('/')
 })
 
 $('#entry-restart').addEventListener('click', () => {
-  reset()
+  if (isParty) {
+    reset()
+  } else if (confirm('You will not be able to change the earlier guess.')) {
+    clearOwn()
+    leave('/')
+  }
 })

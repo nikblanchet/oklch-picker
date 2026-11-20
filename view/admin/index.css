@@ -12,8 +12,7 @@
 
 .admin_box {
   padding: 16px;
-  background: var(--surface-0);
-  border-radius: 8px;
+  background: var(--card);
 
   &:is(form) {
     display: grid;
@@ -30,7 +29,7 @@
 
 .admin_empty {
   padding: 20px;
-  color: var(--text-secondary);
+  color: var(--pencil);
   text-align: center;
 }
 
@@ -38,17 +37,15 @@
   display: grid;
   gap: 12px;
   margin-top: 16px;
-  list-style: none;
   counter-reset: entry;
 }
 
-.swatch {
+.sample {
   flex: none;
   width: 60px;
   height: 60px;
-  background: var(--swatch);
-  border-radius: 6px;
-  box-shadow: 0 2px 8px oklch(0 0 0 / 15%);
+  background: var(--paint);
+  box-shadow: inset 0 0 0 1px var(--hairline);
 }
 
 .entry {
@@ -56,16 +53,15 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 16px;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
   counter-increment: entry;
-  background: var(--surface-0);
+  background: var(--card);
   border: 2px solid transparent;
-  border-radius: 8px;
 
   &.is-winner {
-    background: var(--surface-ui-accent);
-    border-color: var(--accent);
+    background: var(--field);
+    border-color: var(--ink);
   }
 }
 
@@ -78,7 +74,7 @@
 
 .entry_title {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
 
   &::before {
     content: counter(entry) '. ';
@@ -86,12 +82,16 @@
 }
 
 /* It has to look different from a name which contains the same words */
-.entry_winner {
+.entry_winner,
+.entry_late {
   padding: 2px 8px;
-  color: var(--text-inverted);
+  color: var(--paper);
   white-space: nowrap;
-  background: var(--surface-primary);
-  border-radius: 6px;
+  background: var(--ink);
+}
+
+.entry_late {
+  background: var(--danger);
 }
 
 .entry_delta {

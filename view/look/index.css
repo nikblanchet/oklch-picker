@@ -1,0 +1,233 @@
+/* Watercolor is a mask, so any sketch can wear any color. Ink goes on top. */
+.look {
+  position: relative;
+  flex: none;
+  height: 100%;
+  aspect-ratio: 19 / 30;
+
+  &::before,
+  &::after {
+    position: absolute;
+    inset: 0;
+    content: '';
+  }
+
+  &::before {
+    mask: bottom / contain no-repeat;
+    transition: background-color 0.18s;
+  }
+
+  &[data-look]::before {
+    background: var(--paint, var(--guess));
+  }
+
+  &::after {
+    background: bottom / contain no-repeat;
+  }
+}
+
+.look_second {
+  position: absolute;
+  inset: 0;
+  mask: bottom / contain no-repeat;
+
+  [data-look] > & {
+    background: var(--paint);
+  }
+}
+
+.stage {
+  position: relative;
+  min-height: 0;
+
+  & > .look {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: var(--height);
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* A piece of fabric pinned to the page: the exact color which is scored */
+.swatch {
+  position: absolute;
+  top: calc(50% + var(--height) * (var(--pin-y) - 0.5));
+  left: calc(50% + var(--height) * var(--pin-x));
+  width: calc(var(--height) * 0.23);
+  height: calc(var(--height) * 0.27);
+  pointer-events: none;
+  filter: drop-shadow(0 0 0.6px oklch(0 0 0 / 60%))
+    drop-shadow(0 2px 3px oklch(0 0 0 / 20%));
+  transform: rotate(var(--pin-turn));
+  transition: 0.3s;
+  transition-property: top, left, transform;
+
+  &::before {
+    position: absolute;
+    inset: 0;
+    content: '';
+    background: var(--guess);
+    clip-path: var(--pinked);
+  }
+
+  &::after {
+    position: absolute;
+    top: -5px;
+    left: calc(50% - 4px);
+    width: 9px;
+    height: 9px;
+    content: '';
+    background: var(--ink);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1.5px var(--paper);
+  }
+}
+
+[data-look='gown'] {
+  &::before {
+    mask-image: url('./art/gown-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/gown-ink.webp');
+  }
+}
+
+[data-look='suit'] {
+  &::before {
+    mask-image: url('./art/suit-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/suit-ink.webp');
+  }
+}
+
+[data-look='column'] {
+  &::before {
+    mask-image: url('./art/column-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/column-ink.webp');
+  }
+}
+
+[data-look='puff'] {
+  &::before {
+    mask-image: url('./art/puff-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/puff-ink.webp');
+  }
+}
+
+[data-look='caftan'] {
+  &::before {
+    mask-image: url('./art/caftan-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/caftan-ink.webp');
+  }
+}
+
+[data-look='coat'] {
+  &::before {
+    mask-image: url('./art/coat-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/coat-ink.webp');
+  }
+}
+
+[data-look='mermaid'] {
+  &::before {
+    mask-image: url('./art/mermaid-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/mermaid-ink.webp');
+  }
+}
+
+[data-look='kilt'] {
+  &::before {
+    mask-image: url('./art/kilt-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/kilt-ink.webp');
+  }
+}
+
+[data-look='tiers'] {
+  &::before {
+    mask-image: url('./art/tiers-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/tiers-ink.webp');
+  }
+}
+
+[data-look='newlook'] {
+  &::before {
+    mask-image: url('./art/newlook-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/newlook-ink.webp');
+  }
+}
+
+[data-look='duo1'] {
+  &::before {
+    mask-image: url('./art/duo1-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/duo1-ink.webp');
+  }
+
+  & > .look_second {
+    mask-image: url('./art/duo1-second.webp');
+  }
+}
+
+[data-look='duo2'] {
+  &::before {
+    mask-image: url('./art/duo2-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/duo2-ink.webp');
+  }
+
+  & > .look_second {
+    mask-image: url('./art/duo2-second.webp');
+  }
+}
+
+[data-look='orbit'] {
+  &::before {
+    mask-image: url('./art/orbit-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/orbit-ink.webp');
+  }
+}
+
+[data-look='prism'] {
+  &::before {
+    mask-image: url('./art/prism-wash.webp');
+  }
+
+  &::after {
+    background-image: url('./art/prism-ink.webp');
+  }
+}

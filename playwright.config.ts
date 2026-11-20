@@ -12,10 +12,7 @@ process.env['VITE_SUPABASE_URL'] = 'https://supabase.test'
 process.env['VITE_SUPABASE_ANON_KEY'] = 'sb_publishable_test'
 
 const executablePath = process.env['CHROMIUM_PATH']
-const launchOptions = {
-  args: ['--enable-unsafe-swiftshader'],
-  ...(executablePath && { executablePath })
-}
+const launchOptions = executablePath ? { executablePath } : {}
 const viewport = { height: 900, width: 1440 }
 
 export default defineConfig({
@@ -39,8 +36,8 @@ export default defineConfig({
     },
     { grep: /@mobile/, name: 'iphone', use: devices['iPhone 15'] },
     {
-      // Headless Firefox has no WebGL without a GPU
-      grepInvert: /@touch|@3d/,
+      // Its offline mode bypasses service workers
+      grepInvert: /@touch|@offline/,
       name: 'firefox',
       use: { ...devices['Desktop Firefox'], viewport }
     }

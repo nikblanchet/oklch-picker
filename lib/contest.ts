@@ -1,10 +1,16 @@
 import { toBase64Url } from './base64.ts'
 import type { Lch } from './color.ts'
-import { CONTACT_MAX_LENGTH, NAME_MAX_LENGTH } from './config.ts'
+import {
+  COLOR_NAME_MAX_LENGTH,
+  CONTACT_MAX_LENGTH,
+  NAME_MAX_LENGTH
+} from './config.ts'
 import { seal } from './crypto.ts'
 import type { Supabase } from './supabase.ts'
 
 export interface Person {
+  /** What they called their guess, if anything. */
+  colorName?: string
   contact: string
   name: string
 }
@@ -52,14 +58,23 @@ export function contactKey({ contact }: Person): string {
   return withoutInvisible(contact.normalize('NFKC')).toLowerCase()
 }
 
-/** One match is either a fixed typo, a namesake or a shared family address. */
-export function countMatches(a: Person, b: Person): number {
-  const order = a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
-  return Number(order === 0) + Number(contactKey(a) === contactKey(b))
+export function nameKey({ name }: Person): string {
+  return withoutInvisible(name.normalize('NFKD'))
+    .replace(/[\u{300}-\u{36F}]/gu, '')
+    .toLowerCase()
 }
 
-export function cleanPerson({ contact, name }: Person): Person {
+/** One match is either a fixed typo, a namesake or a shared family address. */
+export function countMatches(a: Person, b: Person): number {
+  return (
+    Number(nameKey(a) === nameKey(b)) + Number(contactKey(a) === contactKey(b))
+  )
+}
+
+export function cleanPerson({ colorName = '', contact, name }: Person): Person {
+  const title = cleanText(colorName, COLOR_NAME_MAX_LENGTH)
   return {
+    ...(!isBlank(title) && { colorName: title }),
     contact: cleanText(contact, CONTACT_MAX_LENGTH),
     name: cleanText(name, NAME_MAX_LENGTH)
   }

@@ -8,11 +8,8 @@ import vercel from './vercel.json' with { type: 'json' }
 export default defineConfig({
   appType: 'mpa',
   build: {
-    // three.js, which is lazy loaded. `scripts/check-size.ts` guards the sizes.
-    chunkSizeWarningLimit: 600,
-    rolldownOptions: {
-      input: ['index.html', 'reports/pantone-colors-of-the-year.html']
-    },
+    // The CSP does not allow `data:` URLs
+    assetsInlineLimit: 0,
     // Old iPads make good kiosks. `tsconfig.app.json` limits built-ins too.
     target: ['safari15.4', 'ios15.4', 'chrome111', 'firefox114']
   },
@@ -23,6 +20,5 @@ export default defineConfig({
     headers: Object.fromEntries(
       vercel.headers[0]!.headers.map(({ key, value }) => [key, value])
     )
-  },
-  worker: { format: 'es' }
+  }
 })

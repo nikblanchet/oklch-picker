@@ -8,6 +8,17 @@ export function $<E extends Element = HTMLElement>(
   return element
 }
 
+export function create<Tag extends keyof HTMLElementTagNameMap>(
+  tag: Tag,
+  className: string,
+  parent: Element
+): HTMLElementTagNameMap[Tag] {
+  const element = document.createElement(tag)
+  element.className = className
+  parent.append(element)
+  return element
+}
+
 export function setText(root: ParentNode, texts: Record<string, string>): void {
   for (const [selector, text] of Object.entries(texts)) {
     $(selector, root).textContent = text

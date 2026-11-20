@@ -22,6 +22,25 @@ button,
 select {
   font: inherit;
   color: inherit;
+  border-radius: 0;
+}
+
+a,
+button {
+  color: inherit;
+  touch-action: manipulation;
+}
+
+h1,
+h2,
+h3,
+h4,
+strong {
+  font-weight: 500;
+}
+
+ol {
+  list-style: none;
 }
 
 select:enabled,

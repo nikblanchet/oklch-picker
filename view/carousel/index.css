@@ -1,0 +1,82 @@
+/* Trackpads would go back in history */
+:root:has(.is-pick:not([hidden])) {
+  overscroll-behavior-x: none;
+}
+
+.carousel {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  & > .look {
+    position: absolute;
+    top: calc(50% - var(--height) / 2);
+    left: calc(50% - var(--height) * 19 / 60);
+    visibility: hidden;
+    height: var(--height);
+    transform-origin: 50% 90%;
+
+    &.is-near {
+      visibility: visible;
+      will-change: transform, opacity;
+    }
+  }
+
+  &.is-hinting > .look {
+    animation: hint 1.5s 0.7s 2 ease-in-out;
+  }
+}
+
+@keyframes hint {
+  35% {
+    translate: -46px;
+  }
+
+  70% {
+    translate: 10px;
+  }
+}
+
+.arrow {
+  position: absolute;
+  top: calc(50% - 18px);
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: var(--paper);
+  border: 1px solid;
+  border-radius: 50%;
+
+  &::before {
+    width: 10px;
+    height: 10px;
+    content: '';
+    border: solid;
+    border-width: 1.5px 0 0 1.5px;
+    transform: translateX(2px) rotate(-45deg);
+  }
+
+  /* Easier to hit */
+  &::after {
+    position: absolute;
+    inset: -6px;
+    content: '';
+  }
+
+  &.is-previous {
+    left: calc(var(--left) - 10px);
+  }
+
+  &.is-next {
+    right: calc(var(--right) - 10px);
+    transform: scaleX(-1);
+  }
+}
