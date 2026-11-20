@@ -49,7 +49,7 @@
   justify-content: space-between;
   min-height: 32px;
 
-  .is-pick > & {
+  :is(.is-pick, .start_past) > & {
     justify-content: flex-end;
   }
 }
@@ -93,6 +93,21 @@
   &.is-named {
     font-style: italic;
   }
+}
+
+/* Fades into the past */
+.title_echo {
+  display: block;
+  width: fit-content;
+  padding: 0 0.12em 0.15em 0;
+  margin: 0 0 -0.15em clamp(0px, 25vw - 62px, 1.1em);
+  color: transparent;
+  background: linear-gradient(
+    90deg,
+    oklch(0.3 0.008 308) 10%,
+    oklch(0.6 0.01 308)
+  );
+  background-clip: text;
 }
 
 .link {

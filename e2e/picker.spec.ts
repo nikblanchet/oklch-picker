@@ -199,11 +199,14 @@ test('drags the looks with a mouse', async ({ page }) => {
   await lookNumber(page, LOOKS.length)
 })
 
-test('shows past winners from anywhere @mobile', async ({ page }) => {
+test('shows past colors from anywhere @mobile', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('#runway')).toContainText('Cloud Dancer')
   await click(page, 'Make my guess')
   await click(page, 'See colors of yesteryear')
+  await expect(
+    page.getByRole('heading', { name: 'Every color since the beginning' })
+  ).toBeFocused()
   await expect(page.locator('#archive > li')).toHaveCount(WINNERS.length)
   const sizes = await page
     .locator('#archive .look')
@@ -276,6 +279,7 @@ test('varies the sketches between visits', async ({ page }) => {
 test('keeps the cover tidy', async ({ page }) => {
   for (const [width, height] of [
     [320, 568],
+    [360, 640],
     [390, 664],
     [430, 739],
     [700, 700],
@@ -295,6 +299,8 @@ test('keeps the cover tidy', async ({ page }) => {
     const left = (await page.locator('.cover_line.is-left').boundingBox())!
     const right = (await page.locator('.cover_line.is-right').boundingBox())!
     expect(right.x - left.x - left.width, `${width}`).toBeGreaterThan(40)
+    const bar = (await page.locator('#start .bar').boundingBox())!
+    expect(bar.height, `${width}`).toBeLessThan(34)
   }
 })
 
@@ -347,7 +353,7 @@ test.describe('service worker', () => {
     const failed: string[] = []
     page.on('requestfailed', request => failed.push(request.url()))
     await page.goto('/?party')
-    await click(page, /See all/)
+    await click(page, 'See colors of yesteryear')
     await page.getByText('Cerulean').last().scrollIntoViewIfNeeded()
     await expect(page.locator('#archive [data-look]').last()).toBeVisible()
     expect(failed).toEqual([])

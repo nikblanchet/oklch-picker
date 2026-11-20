@@ -77,9 +77,10 @@ in. Prefer your own device over the one entrants use.
 ## Colors
 
 The picker only offers colors which both sRGB screens can show and real
-surfaces can have according to Pointer’s gamut. Every previous winner is among
-them. The database does not enforce this. Everybody starts from a random color,
-which is stored as the “primer” to see how it influences guesses.
+surfaces can have according to Pointer’s gamut. Every previous Color of the
+Year is among them. The database does not enforce this. Everybody starts from
+a random color, which is stored as the “primer” to see how it influences
+guesses.
 
 ## Security model
 
